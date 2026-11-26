@@ -10,7 +10,7 @@ prints. Each row says whether the claim is true in v0.1.0.
 | Foreground app name | `activity_log.app_name` | Not redacted (see "Gaps"). |
 | Window title | `activity_log.window_title` | Replaced by `[private]` if any blocklist pattern is a substring. |
 | Category, duration, idle flag | `activity_log` | One row per tick. |
-| Focus score snapshots | `focus_scores` | ~1,440 `session` rows a day while tracking, never pruned. |
+| Focus score snapshots | `focus_scores` | ~1,440 `session` rows a day while tracking, pruned after a day. |
 | Goals | `goals` | Free text you typed. |
 | Git data | nothing persisted | `github repos` and `github summary` compute and print. The privacy screen says commit messages are tracked, but nothing writes them to the DB. |
 
@@ -26,7 +26,7 @@ browser puts in its window title), file contents, network traffic.
 | Encryption | **Only with `[encrypted]`** | The default install uses `sqlite3`. The screen says "NOT encrypted" honestly, but the README used to say "SQLCipher AES-256" without the caveat. |
 | Secrets in OS keyring | **Yes** | `security/keyring_store.py` is the only caller. |
 | Telemetry: none | **Yes** | No network code runs except `coach help`/`nudge` (when AI is on), `github summary`, and the Ollama client (localhost). |
-| Auto-delete after 90 days | **No** | `core/retention.py::run_retention_policy` is never called. Rows are kept forever. |
+| Auto-delete after 90 days | **Yes, since the fix** | The tracker runs `core/retention.py` on its first tick and then daily: raw rows older than `retention_days` are summarised per day, then deleted. Not enforced while the tracker isn't running. v0.1.0 never called it. |
 | `privacy blocklist add <p>` | **No** | Prints "Added", saves nothing. Edit the config file instead ([start.md § 8](../start.md#8-configuration)). |
 
 ## Encryption at rest
@@ -60,17 +60,14 @@ redaction gap can reach the LLM.
 
 ## Gaps, ranked
 
-1. **Retention never runs.** The 90-day promise is unenforced. Fix: call
-   `run_retention_policy()` from the tracker when the date changes, and prune `session` scores
-   there too.
-2. **Blocklist edits from the CLI are dropped.** A user who "adds" their bank believes it's
+1. **Blocklist edits from the CLI are dropped.** A user who "adds" their bank believes it's
    redacted. It isn't.
-3. **`app_name` is not sanitised.** On the Windows and Linux fallback paths the app name is the
+2. **`app_name` is not sanitised.** On the Windows and Linux fallback paths the app name is the
    last segment of the title, or the whole title when it has no separator. Run `sanitize_title`
    on the app name too.
-4. **Unencrypted by default.** Either make SQLCipher a core dependency or have `start` refuse to
+3. **Unencrypted by default.** Either make SQLCipher a core dependency or have `start` refuse to
    run unencrypted without an explicit `--allow-plaintext`.
-5. **Substring blocklist.** Over-redacts common words, and nothing redacts unlisted sensitive sites.
+4. **Substring blocklist.** Over-redacts common words, and nothing redacts unlisted sensitive sites.
    Whole-word matching fixes the first. For the second, consider an allowlist mode for titles
    (store titles only for categorised coding/docs apps).
 

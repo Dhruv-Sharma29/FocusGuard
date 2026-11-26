@@ -15,33 +15,44 @@ gives `"Google Chrome"`. For a title with no separator, the whole title becomes 
 
 ## Idle detection
 
-`ActivityTracker._check_idle()` returns `False` unconditionally. The only idle signal is
-"no window detected" (often a locked screen). `idle_threshold` in the config is read and ignored.
-**Consequence:** walk away for an hour with your editor focused and FocusGuard logs an hour of
-coding.
-
-A real implementation needs seconds-since-last-input per OS, all reachable without new
+A tick is idle when no window is detected (often a locked screen) or when there has been no
+keyboard or mouse input for `idle_threshold` seconds (default 300). Idle ticks are logged but
+left out of every score. `platform/idle.py` reads seconds-since-last-input with no new
 dependencies:
 
-| OS | Source |
-| --- | --- |
-| macOS | `ioreg -c IOHIDSystem` → `HIDIdleTime` (nanoseconds) |
-| Windows | `ctypes.windll.user32.GetLastInputInfo` |
-| Linux X11 | `xprintidle` if present, else treat as unknown |
+| OS | Source | Checked |
+| --- | --- | --- |
+| macOS | `ioreg -c IOHIDSystem` → `HIDIdleTime` (nanoseconds) | Yes |
+| Windows | `ctypes.windll.user32.GetLastInputInfo` vs `GetTickCount` | [verify] |
+| Linux X11 | `xprintidle` if installed | [verify] |
+| Wayland, or any failure | none: the tick counts as not idle | — |
+
+v0.1.0 had a stub here that always said "not idle", so an hour away from a focused editor logged an
+hour of coding.
 
 ## Classification (`ActivityTracker._classify_app`)
 
-Search text is `f"{app_name} {title}".lower()`. Categories are checked in this order, and the first
-category with **any keyword as a substring** wins:
+Keywords match **whole words**, case-insensitively: `zed` matches "Zed" but not "organized".
+A keyword that starts or ends with punctuation (`.py`) is only guarded on its letter side, so
+`.py` still matches `main.py`.
 
-1. `coding` → 2. `documentation` → 3. `entertainment` → 4. `browser`, `communication` (dict order) → `other`
+1. Match the **app name**. If it lands in any category other than `browser`, that's the answer:
+   "Visual Studio Code" is coding even with `docs/README.md` open.
+2. Otherwise (a browser, or an app no keyword knows) match the **title**, checking categories in
+   the order `documentation` → `entertainment` → `coding` → the rest in dict order.
+3. No title match: the app's own category (`browser`), else `other`.
 
-Keyword lists are in `TrackerConfig.app_categories` (`config.py`) and replaceable from the config file.
+Documentation goes before entertainment so "Python tutorial - YouTube" counts as learning.
+Entertainment goes before coding so "Next.js drama - Twitter" doesn't. Keyword lists are in
+`TrackerConfig.app_categories` (`config.py`) and replaceable from the config file. The default
+documentation list no longer contains bare topics (`python`, `react`, `rust`…), which made any
+title that mentioned a language count as study.
 
-**Why this misfires.** Short keywords match inside ordinary words, and coding is checked before
-entertainment, so a coding keyword *anywhere* in a YouTube title wins:
+**What v0.1.0 got wrong.** It matched substrings of `app name + title` and checked coding first,
+so a coding keyword *anywhere* in a YouTube title won. All six now classify as entertainment
+(`tests/test_tracker.py::TestClassifierRegressions`):
 
-| Title (in Chrome/Safari) | Matched keyword | Category |
+| Title (in Chrome/Safari) | v0.1.0 match | v0.1.0 category |
 | --- | --- | --- |
 | How I Organized My Life - YouTube | `zed` in "organi**zed**" | coding |
 | Anatomy of a scandal - Netflix | `atom` in "an**atom**y" | coding |
@@ -50,9 +61,8 @@ entertainment, so a coding keyword *anywhere* in a YouTube title wins:
 | lofi beats to code to - YouTube | `code` | coding |
 | Python memes - Reddit | `python` | documentation |
 
-All six are reproducible with the snippet in [05](05-known-issues.md) #1. Fix direction:
-whole-word matching (`re.search(rf"\b{re.escape(k)}\b", text)`), app-name rules before title
-rules, and site names (YouTube, Netflix…) checked before topic words.
+Known remaining misfire: `course` makes "Of course I quit - YouTube" documentation. Title
+keywords can't separate a lecture from a vlog reliably; measuring that is in [00](00-charter.md).
 
 ## Focus score (`core/scorer.py`)
 
@@ -67,8 +77,8 @@ T = Σ w·minutes over all rows           neutral     = browser, communication, 
 score = clamp( 100·P/T − 25·D/T , 0, 100 )
 ```
 
-- Neutral time dilutes the score but isn't penalised. An hour in Slack drags the ratio down as
-  much as an hour idle at the desk would, if idle were detected.
+- Neutral time dilutes the score but isn't penalised. An hour in Slack drags the ratio down;
+  an hour idle doesn't, because idle rows are excluded.
 - `terminal` is listed as productive, but no keyword list produces it. Terminals are classified
   `coding` through their keywords.
 - Week/month reports call the same function with `use_decay=False`, once per calendar day.

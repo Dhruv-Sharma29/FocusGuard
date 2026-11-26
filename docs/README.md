@@ -24,15 +24,17 @@ Most time trackers either log everything (keystrokes, URLs, screenshots) or noth
 aims for the middle: one sample a minute of *which app and window title is in front*, titles
 redacted against a blocklist before they touch disk, stored locally, scored locally. What makes it
 more than a logger is the scoring layer: a decayed productive-time ratio, and a weighted-signal
-procrastination engine meant to tell "reading docs in a browser" from "drifting". As of v0.1.0 the
-logging, scoring and UI work. The engine, retention and idle detection don't yet ([05](05-known-issues.md)),
-and the classifier is the weakest link: the score is only as honest as the category each sample gets.
+procrastination engine meant to tell "reading docs in a browser" from "drifting". Logging,
+scoring, the UI, idle detection and retention work. The engine isn't wired in yet
+([05](05-known-issues.md)), and the classifier is still the weakest link: the score is only as
+honest as the category each sample gets.
 
 ## Status
 
 v0.1.0: an initial commit plus a licence (a CI workflow exists only on the `fix/repository-review`
-branch). 78 unit tests pass on Python 3.12. Line coverage
-is about 25%, and none of the CLI commands, UI renderers, integrations or daemons are under test.
+branch). The `docs/readme-refresh` branch adds fixes for the classifier, idle detection and
+retention (05 #1–3). 86 unit tests pass on Python 3.12. Line coverage
+is about 29%, and none of the CLI commands, UI renderers, integrations or daemons are under test.
 Findings in these docs come from reading the code and running it on macOS on 2026-11-26. Windows and
 Linux paths were read, not run.
 

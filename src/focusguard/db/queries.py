@@ -451,14 +451,14 @@ def delete_activity_before(before: datetime) -> int:
     return cursor.rowcount or 0
 
 
-def delete_hourly_scores_before(before: datetime) -> int:
-    """Delete hourly focus score entries older than a given date.
+def delete_scores_before(before: datetime, period: str) -> int:
+    """Delete focus score entries of one period older than a given date.
 
     Returns:
         Number of rows deleted.
     """
     cursor = execute(
-        "DELETE FROM focus_scores WHERE timestamp < ? AND period = 'hourly'",
-        (_ts(before),),
+        "DELETE FROM focus_scores WHERE timestamp < ? AND period = ?",
+        (_ts(before), period),
     )
     return cursor.rowcount or 0

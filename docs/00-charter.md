@@ -50,8 +50,8 @@ anything; [06](06-roadmap.md) schedules them.
 
 | Question | Measure | Why it matters |
 | --- | --- | --- |
-| Are samples labelled correctly? | Hand-label ~200 real window titles; report per-category precision/recall of `_classify_app` | Every number in the UI is downstream of this. All six entertainment titles tested in [05](05-known-issues.md) were labelled productive. |
-| Is time away excluded? | Leave the machine for 15 min with an editor focused; count minutes logged as coding | Idle detection is a stub today, so this is currently 100% wrong |
+| Are samples labelled correctly? | Hand-label ~200 real window titles; report per-category precision/recall of `_classify_app` | Every number in the UI is downstream of this. In v0.1.0 all six entertainment titles in [05](05-known-issues.md) #1 were labelled productive; they pass now, but six titles is not a measurement. |
+| Is time away excluded? | Leave the machine for 15 min with an editor focused; count minutes logged as coding | v0.1.0 counted all of it (idle was a stub). Now uses last-input time; this 15-minute check hasn't been run yet |
 | Does the score track how the user rated the day? | Daily 1–5 self-rating for two weeks vs. score; rank correlation | A score nobody agrees with gets ignored |
 | Does the procrastination engine help? | Once wired in: share of alerts the user marks "fair" | Weighted rules are only useful if the weights are right |
 | Overhead | CPU and memory of the daemon over a day; DB growth per day | It has to be forgettable to stay installed |

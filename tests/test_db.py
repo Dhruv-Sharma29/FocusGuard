@@ -112,3 +112,36 @@ class TestGitActivity:
         queries.log_git_event("pr_merge", "repo2")
         recent = queries.get_recent_git_activity(10)
         assert len(recent) == 2
+
+
+def test_retention_summarises_and_prunes(mock_db):
+    """Rows past retention_days are summarised then deleted; session scores past a day go."""
+    from unittest.mock import patch
+
+    from focusguard.config import FocusGuardConfig
+    from focusguard.core.retention import run_retention_policy
+    from focusguard.db.connection import execute, query
+
+    old_day = (datetime.now() - timedelta(days=100)).strftime("%Y-%m-%d")
+    for _ in range(3):
+        queries.log_activity("Code", "a.py", "coding", 60, False)
+    queries.log_activity("Code", "new.py", "coding", 60, False)
+    execute(f"UPDATE activity_log SET timestamp = '{old_day} 10:00:00' WHERE window_title = 'a.py'")
+    queries.save_focus_score(80.0, 3, 0, 3, "hourly")
+    execute(f"UPDATE focus_scores SET timestamp = '{old_day} 10:30:00'")
+    queries.save_focus_score(70.0, 1, 0, 1, "session")
+    execute(
+        "UPDATE focus_scores SET timestamp = datetime('now', 'localtime', '-2 days')"
+        " WHERE period = 'session'"
+    )
+    queries.save_focus_score(75.0, 1, 0, 1, "session")  # today's, kept
+
+    with patch("focusguard.core.retention.load_config", return_value=FocusGuardConfig()):
+        result = run_retention_policy()
+
+    assert result == {"days_summarized": 1, "activity_rows_deleted": 3, "score_rows_deleted": 2}
+    summary = query("SELECT * FROM daily_summaries WHERE date = ?", (old_day,))[0]
+    assert summary["coding_minutes"] == 3
+    assert summary["avg_focus_score"] == 80.0  # found only with the space-separated timestamp
+    assert [r["window_title"] for r in query("SELECT window_title FROM activity_log")] == ["new.py"]
+    assert [r["score"] for r in query("SELECT score FROM focus_scores")] == [75.0]

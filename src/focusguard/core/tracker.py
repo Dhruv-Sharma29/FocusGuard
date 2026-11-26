@@ -15,24 +15,48 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import signal
 import sys
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import psutil
 from rich.console import Console
 
 from focusguard.config import DATA_DIR, PID_FILE, load_config
+from focusguard.core.retention import run_retention_policy
 from focusguard.core.scorer import snapshot_score
 from focusguard.db.models import init_db
 from focusguard.db.queries import log_activity
+from focusguard.platform.idle import get_idle_seconds
 from focusguard.platform.window import WindowInfo, get_active_window
 from focusguard.security.blocklist import sanitize_title
 
 logger = logging.getLogger(__name__)
 console = Console(stderr=True)
+
+# Checked first, in this order. Entertainment beats coding so that
+# "Next.js drama - Twitter" isn't coding; documentation beats entertainment
+# so that "Python tutorial - YouTube" counts as learning.
+_PRIORITY = ("documentation", "entertainment", "coding")
+
+
+def _keyword_pattern(keywords: list[str]) -> re.Pattern[str] | None:
+    """One regex matching any keyword as a whole word.
+
+    Guards are only added on alphanumeric ends, so ".py" still matches
+    "main.py" while "zed" no longer matches "organized".
+    """
+    parts = [
+        ("(?<![a-z0-9])" if k[0].isalnum() else "")
+        + re.escape(k)
+        + ("(?![a-z0-9])" if k[-1].isalnum() else "")
+        for k in (kw.lower() for kw in keywords)
+        if k
+    ]
+    return re.compile("|".join(parts)) if parts else None
 
 
 class ActivityTracker:
@@ -49,7 +73,14 @@ class ActivityTracker:
         self._poll_interval = self._config.tracker.poll_interval
         self._last_hourly_snapshot = datetime.now()
         self._blocklist = self._config.security.blocklist
-        self._categories = self._config.tracker.app_categories
+        self._idle_threshold = self._config.tracker.idle_threshold
+        self._last_retention_day: date | None = None
+        categories = self._config.tracker.app_categories
+        order = [c for c in _PRIORITY if c in categories]
+        order += [c for c in categories if c not in _PRIORITY]
+        self._patterns = [
+            (cat, pat) for cat in order if (pat := _keyword_pattern(categories[cat]))
+        ]
 
     def start(self, daemon_mode: bool = False) -> None:
         """Start the tracking loop.
@@ -126,6 +157,12 @@ class ActivityTracker:
             snapshot_score("hourly")
             self._last_hourly_snapshot = now
 
+        # Once per calendar day (and on the first tick): retention + score pruning.
+        # Marked before running so a failing policy is retried tomorrow, not every tick.
+        if self._last_retention_day != now.date():
+            self._last_retention_day = now.date()
+            logger.info(f"Retention: {run_retention_policy()}")
+
         logger.debug(
             f"Tick: {window.app_name} [{category}]"
             f" {'(idle)' if is_idle else ''}"
@@ -134,44 +171,24 @@ class ActivityTracker:
     def _classify_app(self, app_name: str, title: str | None) -> str:
         """Classify an application into a productivity category.
 
-        Checks window title first for content-based categories (entertainment,
-        documentation), then falls back to app name matching. This ensures
-        'YouTube in Chrome' is classified as entertainment, not browser.
+        The app name decides first ("Visual Studio Code" is coding whatever
+        file is open). Browsers, and apps no keyword matches, are decided by
+        the window title, so "YouTube" in Chrome is entertainment. Keywords
+        match whole words only.
         """
-        app_lower = app_name.lower()
-        title_lower = (title or "").lower()
-        search_text = f"{app_lower} {title_lower}"
+        app_category = self._match(app_name)
+        if app_category and app_category != "browser":
+            return app_category
+        return self._match(title) or app_category or "other"
 
-        # Priority 1: check title-specific categories first
-        # (coding, entertainment and documentation keywords in the title override app name)
-        title_priority = ["coding", "documentation", "entertainment"]
-        for category in title_priority:
-            keywords = self._categories.get(category, [])
-            if any(keyword in search_text for keyword in keywords):
-                return category
-
-        # Priority 2: check all categories against full search text
-        for category, keywords in self._categories.items():
-            if category in title_priority:
-                continue  # Already checked above
-            if any(keyword in search_text for keyword in keywords):
-                return category
-
-        return "other"
+    def _match(self, text: str | None) -> str | None:
+        text = (text or "").lower()
+        return next((cat for cat, pat in self._patterns if pat.search(text)), None)
 
     def _check_idle(self) -> bool:
-        """Check if the user has been idle (no input) beyond the threshold.
-
-        Uses a simple heuristic: if the same window has been active for
-        longer than idle_threshold with no change, assume idle.
-
-        Note: A more robust idle check would use OS-specific APIs
-        (CGEventSourceSecondsSinceLastEventType on macOS, GetLastInputInfo
-        on Windows, XScreenSaverQueryInfo on Linux).
-        """
-        # For now, we rely on window detection — if we get "Unknown",
-        # the screen is likely locked
-        return False
+        """True when there has been no keyboard/mouse input for idle_threshold seconds."""
+        seconds = get_idle_seconds()
+        return seconds is not None and seconds >= self._idle_threshold
 
     def _handle_signal(self, signum: int, frame: object) -> None:
         """Handle SIGTERM/SIGINT for graceful shutdown."""

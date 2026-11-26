@@ -37,7 +37,7 @@ Want `focusguard` on your PATH outside the venv? `pipx install ".[encrypted]"` f
 | OS | What to do |
 | --- | --- |
 | macOS | System Settings → Privacy & Security → **Accessibility** → add your terminal (Terminal, iTerm, Warp…). Without it you get app names but no window titles. `focusguard start` warns when the permission is missing. |
-| Linux | Works on X11. On Wayland, window titles are mostly unavailable; the fallback uses `xdotool`, so install it. |
+| Linux | Works on X11. On Wayland, window titles are mostly unavailable; the fallback uses `xdotool`, so install it. Install `xprintidle` too, or idle time isn't detected. |
 | Windows | Works out of the box. Some antivirus tools flag any process that reads window titles. FocusGuard only reads the foreground window name; it doesn't inject into processes or read input. |
 
 ## 3. Track
@@ -148,10 +148,10 @@ The config file is optional; every key has a default. Its location comes from `p
 ```toml
 [tracker]
 poll_interval = 60          # seconds between polls
-idle_threshold = 300        # read but not used yet (idle detection is a stub)
+idle_threshold = 300        # seconds without keyboard/mouse input before a minute counts as idle
 
 [security]
-retention_days = 90         # read but not enforced yet
+retention_days = 90         # older raw rows are summarised per day, then deleted (checked daily)
 blocklist = ["chase", "paypal", "mychart", "incognito", "1password", "mybank"]
 # Setting blocklist REPLACES the built-in list. Copy the defaults from
 # src/focusguard/config.py and append, or you lose the built-in patterns.
@@ -168,7 +168,7 @@ openai_model = "gpt-4o-mini"
 [tracker.app_categories]
 # Setting this table REPLACES ALL default categories, not just the ones you list.
 # Define every category you want (coding, documentation, entertainment, browser, communication).
-# Keyword match is a substring match on "app name + window title".
+# Keywords match whole words: the app name first, then the window title for browsers.
 coding = ["code", "pycharm", "terminal", "iterm", "xcode", "cursor"]
 ```
 

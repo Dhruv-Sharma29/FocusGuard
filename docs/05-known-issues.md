@@ -1,14 +1,15 @@
 # 05 — Known issues
 
 Verified on macOS with Python 3.12 on 2026-11-26 against commit `0176c5a`. Ordered by how much
-each one misleads the user. Severity: **high** = numbers or privacy promises are wrong;
+each one misleads the user. Issues 1–3 are fixed on the `docs/readme-refresh` branch (not yet
+released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
 **medium** = a feature silently does nothing; **low** = cosmetic or edge case.
 
 ## High
 
-### 1. Classifier calls entertainment "coding"
-`core/tracker.py::_classify_app` matches keywords as substrings and checks `coding` before
-`entertainment`. Every title below was classified as productive.
+### 1. Classifier calls entertainment "coding" — **fixed**
+In v0.1.0, `core/tracker.py::_classify_app` matched keywords as substrings and checked `coding`
+before `entertainment`. Every title below was classified as productive.
 
 ```bash
 python -c "
@@ -20,20 +21,25 @@ for title in ['How I Organized My Life - YouTube', 'Anatomy of a scandal - Netfl
     print(title, '->', t._classify_app('Google Chrome', title))"
 ```
 
-Output: 5 × `coding`, 1 × `documentation`. **Fix:** whole-word regex matching, check
-entertainment *sites* before topic keywords, and classify by app name before title. Add these
-six titles as a regression test.
+v0.1.0 output: 5 × `coding`, 1 × `documentation`. Now all six print `entertainment`. **Fixed by**
+whole-word matching, checking the app name before the title (browsers excepted), title priority
+documentation → entertainment → coding, and dropping bare topic words (`python`, `react`…) from the
+default documentation list. Regression tests: `tests/test_tracker.py::TestClassifierRegressions`.
+Still possible: `course` matches "Of course I quit - YouTube" (documentation).
 
-### 2. Idle time counts as work
-`_check_idle()` returns `False`. An unattended editor logs coding time all night if the screen
-doesn't lock. **Fix:** per-OS last-input time ([02](02-tracking-and-scoring.md#idle-detection)),
-compared with `idle_threshold`.
+### 2. Idle time counts as work — **fixed**
+In v0.1.0 `_check_idle()` returned `False`, so an unattended editor logged coding time all night.
+It now compares per-OS seconds-since-last-input (`platform/idle.py`) with `idle_threshold`. Checked
+on macOS by running the real tracker; Windows and X11 are [verify], and Wayland has no source yet
+([02](02-tracking-and-scoring.md#idle-detection)).
 
-### 3. Retention never runs; score rows grow forever
-`run_retention_policy()` has no caller, so the "auto-delete after 90 days" promise on the privacy
-screen is false. Separately, a `session` score row is written every tick and never deleted
-(~525k rows/year). **Fix:** in `_poll_tick`, when the date differs from the last tick, run
-retention, and delete `session` rows older than a day.
+### 3. Retention never runs; score rows grow forever — **fixed**
+In v0.1.0 `run_retention_policy()` had no caller, and a `session` score row was written every tick
+and never deleted (~525k rows/year). The tracker now runs retention on its first tick and then once
+per calendar day; retention also deletes `session` rows older than a day. Wiring it in exposed a
+second bug, also fixed: retention compared stored timestamps (`YYYY-MM-DD HH:MM:SS`) with
+`isoformat()` strings (`T` separator), so daily summaries never found their scores or commits and a
+partly-summarised cutoff day could later be overwritten. Test: `tests/test_db.py::test_retention_summarises_and_prunes`.
 
 ### 4. Blocklist changes from the CLI are discarded
 `privacy blocklist add/remove` print a ✓ and return. Nothing is saved. **Fix:** append/remove in
@@ -100,8 +106,8 @@ On an LLM error it prints "Falling back to local mode." and exits. Nothing is sh
 
 | Check | Result |
 | --- | --- |
-| `pytest` | 78 passed |
-| Line coverage | 25%. `commands/`, `ui/`, `integrations/`, `platform/daemon_*`, `core/retention.py` are at 0% |
+| `pytest` | 86 passed (78 in v0.1.0) |
+| Line coverage | 29%. `commands/`, `ui/`, `integrations/`, `platform/daemon_*` are at 0% |
 | `ruff check src` | 94 findings (18 unused imports, 9 `raise … from` missing, 48 auto-fixable) |
 | `mypy src` (strict, as configured) | 31 errors in 12 files |
 

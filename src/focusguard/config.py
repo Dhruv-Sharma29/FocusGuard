@@ -63,8 +63,8 @@ class TrackerConfig:
         "documentation": [
             "notion", "obsidian", "confluence", "docs", "wiki", "readme",
             "markdown", "pdf", "preview", "tutorial", "course", "lecture",
-            "crash course", "programming", "learn code", "javascript", "python",
-            "react", "rust", "typescript",
+            "documentation", "learn code",
+            # No bare topics ("python", "react"): they made "Python memes - Reddit" documentation.
         ],
     })
 

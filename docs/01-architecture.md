@@ -5,13 +5,14 @@
 ```text
  every poll_interval s (default 60)                     core/tracker.py  ActivityTracker._poll_tick
  ┌────────────────────────────────────────────────────────────────────────────────────────────┐
- │ platform/window.py ─► security/blocklist.py ─► _classify_app ─► queries.log_activity ─►     │
+ │ platform/window.py ─► security/blocklist.py ─► _classify_app ─► queries.log_activity ─►    │
  │ app name + title       title → "[private]"      category         activity_log row          │
- │ (PyWinCtl, then        if any pattern is a      (substring        (duration = poll         │
- │  AppKit / win32gui /   substring of it          keywords)         interval, is_idle)       │
- │  xdotool fallback)                                                                         │
- │                                                     ─► scorer.snapshot_score("session")     │
+ │ (PyWinCtl, then        if any pattern is a      (whole-word       (duration = poll         │
+ │  AppKit / win32gui /   substring of it          keywords)         interval, is_idle from   │
+ │  xdotool fallback)                                                platform/idle.py)        │
+ │                                                     ─► scorer.snapshot_score("session")    │
  │                                                        (+ "hourly" once an hour)           │
+ │                                                     ─► retention (first tick, then daily)  │
  └────────────────────────────────────────────────────────────────────────────────────────────┘
         │ activity_log, focus_scores, goals                       │
         ▼                                                         ▼
@@ -33,14 +34,14 @@ src/focusguard/
 │   ├── tracker.py         Poll loop, classification, PID file
 │   ├── scorer.py          Focus score, decay, trend, snapshots
 │   ├── pattern_engine.py  Weighted procrastination signals (not wired in)
-│   └── retention.py       Aggregate-then-delete old rows (not wired in)
+│   └── retention.py       Aggregate-then-delete old rows; prunes session scores
 ├── db/
 │   ├── connection.py  Thread-local connection; SQLCipher if installed, else sqlite3
 │   ├── models.py      Schema v1, created on every command (idempotent)
 │   └── queries.py     All SQL lives here
 ├── integrations/      git_tracker.py (GitPython), github_api.py (PyGithub), llm.py (Ollama/OpenAI)
 ├── personality/       modes.py (4 tones + templates), prompts.py (LLM system prompts)
-├── platform/          window.py, daemon_macos.py / daemon_linux.py / daemon_windows.py
+├── platform/          window.py, idle.py, daemon_macos.py / daemon_linux.py / daemon_windows.py
 ├── security/          blocklist.py, crypto.py (DB key), keyring_store.py (only keyring caller)
 └── ui/                dashboard.py, report_view.py, themes.py (per-mode colours)
 ```
@@ -50,10 +51,10 @@ src/focusguard/
 | Table | Written by | Read by | Notes |
 | --- | --- | --- | --- |
 | `activity_log` | tracker, every tick | scorer, UI, coach | One row per tick. `timestamp` is local time as `YYYY-MM-DD HH:MM:SS`; `queries._ts()` formats every bound parameter the same way so string comparison works. |
-| `focus_scores` | tracker: `session` every tick, `hourly` every hour | trend arrow, slump-hour learning | `session` rows are never pruned: ~1,440/day while tracking. |
+| `focus_scores` | tracker: `session` every tick, `hourly` every hour | trend arrow, slump-hour learning | ~1,440 `session` rows/day while tracking; retention deletes those older than a day, and `hourly` rows after 30 days. |
 | `goals` | `goal` commands | dashboard, coach | Newest active goal is "the" goal. |
 | `git_activity` | **nothing** | dashboard "Commits", pattern engine, retention | `log_git_event()` has no caller, so this table stays empty. |
-| `daily_summaries` | `retention.py` (never runs) | nothing | |
+| `daily_summaries` | `retention.py`, for days past `retention_days` | nothing | Written, but no report reads them yet. |
 | `schema_version` | `init_db` | nothing | Version 1; there is no migration path yet. |
 
 ## Design rules, and where the code keeps them

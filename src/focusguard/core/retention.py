@@ -4,8 +4,9 @@ Prevents activity logs from accumulating forever:
 - Raw activity_log entries older than retention_days → aggregate into
   daily summaries, then delete raw rows
 - Hourly focus_scores older than 30 days → delete (daily scores kept)
+- Session focus_scores older than 1 day → delete (only the latest is ever read)
 
-Runs automatically once per day when the daemon detects a new calendar day.
+Run by the tracker on its first tick and then once per calendar day.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from datetime import datetime, timedelta
 
 from focusguard.config import load_config
 from focusguard.db import queries
+from focusguard.db.queries import _ts
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +29,16 @@ def run_retention_policy() -> dict[str, int]:
         Dict with counts of rows affected:
         - 'days_summarized': number of days aggregated
         - 'activity_rows_deleted': raw rows deleted
-        - 'score_rows_deleted': hourly score rows deleted
+        - 'score_rows_deleted': hourly and session score rows deleted
     """
     config = load_config()
     retention_days = config.security.retention_days
 
     now = datetime.now()
-    cutoff = now - timedelta(days=retention_days)
+    # Midnight, so a day is summarised whole rather than split across two runs.
+    cutoff = (now - timedelta(days=retention_days)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
     score_cutoff = now - timedelta(days=30)
 
     results = {
@@ -52,12 +57,10 @@ def run_retention_policy() -> dict[str, int]:
             f"deleted {results['activity_rows_deleted']} raw activity rows"
         )
 
-    # Step 2: Delete old hourly scores
-    results["score_rows_deleted"] = queries.delete_hourly_scores_before(score_cutoff)
-    if results["score_rows_deleted"] > 0:
-        logger.info(
-            f"Retention: deleted {results['score_rows_deleted']} old hourly scores"
-        )
+    # Step 2: Delete old hourly scores, and session scores (one per tick) past a day
+    results["score_rows_deleted"] = queries.delete_scores_before(
+        score_cutoff, "hourly"
+    ) + queries.delete_scores_before(now - timedelta(days=1), "session")
 
     return results
 
@@ -76,7 +79,7 @@ def _aggregate_to_daily_summaries(cutoff: datetime) -> int:
            FROM activity_log
            WHERE timestamp < ?
            ORDER BY day ASC""",
-        (cutoff.isoformat(),),
+        (_ts(cutoff),),
     )
 
     days_processed = 0
@@ -96,7 +99,7 @@ def _aggregate_to_daily_summaries(cutoff: datetime) -> int:
                FROM focus_scores
                WHERE timestamp BETWEEN ? AND ?
                  AND period IN ('hourly', 'daily')""",
-            (day_start.isoformat(), day_end.isoformat()),
+            (_ts(day_start), _ts(day_end)),
         )
         avg_score = float(score_row[0]["avg_score"]) if score_row and score_row[0]["avg_score"] else None
 
@@ -107,7 +110,7 @@ def _aggregate_to_daily_summaries(cutoff: datetime) -> int:
         git_commits_row = query(
             """SELECT COUNT(*) as count FROM git_activity
                WHERE timestamp BETWEEN ? AND ? AND event_type = 'commit'""",
-            (day_start.isoformat(), day_end.isoformat()),
+            (_ts(day_start), _ts(day_end)),
         )
         git_commits = int(git_commits_row[0]["count"]) if git_commits_row else 0
 

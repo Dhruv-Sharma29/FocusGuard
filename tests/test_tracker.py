@@ -54,3 +54,70 @@ class TestAppClassification:
 
     def test_classify_spotify(self):
         assert self.tracker._classify_app("Spotify", "Playing music") == "entertainment"
+
+
+def _tracker_with_defaults() -> ActivityTracker:
+    """Tracker using the real default config, not a hand-written category dict."""
+    from focusguard.config import FocusGuardConfig
+
+    with patch("focusguard.core.tracker.load_config", return_value=FocusGuardConfig()):
+        return ActivityTracker()
+
+
+class TestClassifierRegressions:
+    """Titles the v0.1.0 substring matcher got wrong (docs/05-known-issues.md #1)."""
+
+    def setup_method(self):
+        self.tracker = _tracker_with_defaults()
+
+    def test_entertainment_titles_in_browser(self):
+        for title in [
+            "How I Organized My Life - YouTube",  # "zed" inside "organized"
+            "Anatomy of a scandal - Netflix",     # "atom" inside "anatomy"
+            "Hyperpop mix - Spotify",             # "hyper"
+            "Next.js drama - Twitter",            # ".js"
+            "lofi beats to code to - YouTube",    # "code"
+            "Python memes - Reddit",              # "python" topic keyword
+        ]:
+            assert self.tracker._classify_app("Google Chrome", title) == "entertainment", title
+
+    def test_learning_on_youtube_is_documentation(self):
+        title = "Python tutorial - YouTube"
+        assert self.tracker._classify_app("Google Chrome", title) == "documentation"
+
+    def test_app_name_beats_title(self):
+        title = "docs/README.md — FocusGuard"
+        assert self.tracker._classify_app("Visual Studio Code", title) == "coding"
+
+    def test_file_extensions_still_match(self):
+        assert self.tracker._classify_app("RandomEditor", "main.py") == "coding"
+        assert self.tracker._classify_app("Google Chrome", "paper.pdf") == "documentation"
+
+    def test_plain_browsing_is_browser(self):
+        assert self.tracker._classify_app("Google Chrome", "Weather forecast") == "browser"
+
+
+class TestIdleAndRetention:
+    def setup_method(self):
+        self.tracker = _tracker_with_defaults()  # idle_threshold = 300
+
+    def test_idle_uses_threshold(self):
+        with patch("focusguard.core.tracker.get_idle_seconds", return_value=301):
+            assert self.tracker._check_idle()
+        with patch("focusguard.core.tracker.get_idle_seconds", return_value=10):
+            assert not self.tracker._check_idle()
+        with patch("focusguard.core.tracker.get_idle_seconds", return_value=None):
+            assert not self.tracker._check_idle()
+
+    def test_retention_runs_once_per_day(self):
+        from focusguard.platform.window import WindowInfo
+
+        window = WindowInfo("Code", "a.py")
+        with (
+            patch("focusguard.core.tracker.get_active_window", return_value=window),
+            patch("focusguard.core.tracker.get_idle_seconds", return_value=0),
+            patch("focusguard.core.tracker.run_retention_policy", return_value={}) as retention,
+        ):
+            self.tracker._poll_tick()
+            self.tracker._poll_tick()
+        assert retention.call_count == 1

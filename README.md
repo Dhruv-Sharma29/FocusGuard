@@ -5,10 +5,10 @@ turns that into a 0–100 focus score, and shows the result as a terminal dashbo
 personality-mode nudges and an optional AI coach (Ollama locally, or OpenAI).
 
 > **Status:** alpha (v0.1.0). The tracker, dashboard, reports, goals, personality modes, AI coach,
-> GitHub summary and per-OS daemons work. The **procrastination engine, 90-day retention and git
-> commit logging are written and unit-tested but not yet called by the app**, idle detection is a
-> stub, and app classification has known false positives. See [Known issues](docs/05-known-issues.md)
-> before trusting a score.
+> GitHub summary, per-OS daemons, idle detection and 90-day retention work. The **procrastination
+> engine and git commit logging are written and unit-tested but not yet called by the app**, and
+> classification is keyword-based, so some titles will land in the wrong category. See
+> [Known issues](docs/05-known-issues.md) before trusting a score.
 
 ![FocusGuard dashboard](docs/images/report.svg)
 
@@ -61,6 +61,7 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | --- | --- | --- |
 | Active-window polling (macOS, Windows, Linux X11) | Works. macOS needs Accessibility permission. | `platform/window.py` |
 | Sensitive-title redaction | Works on window titles. Substring match, so it over-redacts; app names are not filtered. | `security/blocklist.py` |
+| App classification | Whole-word keywords; app name first, then title for browsers. Keyword-based, so not exact. | `core/tracker.py` |
 | Focus score with time decay | Works. Only as good as the classifier feeding it. | `core/scorer.py` |
 | Dashboard, `stats`, week/month report | Works. The report's "Commits" column is always 0. | `ui/` |
 | Goals | Works. | `commands/goal.py` |
@@ -69,9 +70,9 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | GitHub summary, local repo scan | Works (`.[github]` extra). | `integrations/` |
 | Background daemon | launchd, systemd user unit and Task Scheduler. | `platform/daemon_*.py` |
 | Encrypted database | Only with the `.[encrypted]` extra. The default install is **plain SQLite**. | `db/connection.py` |
-| Idle detection | **Stub.** Always "not idle", so time away with an editor open counts as coding. | `core/tracker.py` |
+| Idle detection | Works on macOS (checked). Windows and X11 (`xprintidle`) written, not yet run; none on Wayland. | `platform/idle.py` |
 | Procrastination engine | **Not wired in.** Unit-tested, never called. | `core/pattern_engine.py` |
-| 90-day retention | **Not wired in.** `run_retention_policy()` is never called. | `core/retention.py` |
+| 90-day retention | Works while the tracker runs: checked once a day, old rows summarised then deleted. | `core/retention.py` |
 | Git commit logging | **Not wired in.** `log_git_event()` is never called. | `db/queries.py` |
 | `privacy blocklist add/remove` | **Prints success, saves nothing.** Edit `config.toml` instead. | `commands/privacy.py` |
 
@@ -98,16 +99,16 @@ Every command: [docs/04-cli-reference.md](docs/04-cli-reference.md).
 
 Everything stays on your machine unless you turn on the AI coach with the OpenAI provider or run a
 `github` command. Window titles that match the blocklist are stored as `[private]`, secrets (DB key,
-GitHub token, OpenAI key) live in the OS keyring, and there is no telemetry. Three of the
-privacy screen's own claims are not true yet: retention never runs, the database is unencrypted
-unless you install the `encrypted` extra, and blocklist edits from the CLI aren't saved. Full
+GitHub token, OpenAI key) live in the OS keyring, and there is no telemetry. Two of the
+privacy screen's own claims are not true yet: the database is unencrypted unless you install the
+`encrypted` extra, and blocklist edits from the CLI aren't saved. Full
 account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-pytest                    # 78 tests, ~25% line coverage; CLI commands and UI are untested
+pytest                    # 86 tests, ~29% line coverage; CLI commands and UI are untested
 ruff check src            # 94 findings today, 48 auto-fixable
 mypy src                  # strict mode: 31 errors today
 python scripts/screenshots.py   # regenerate docs/images/
