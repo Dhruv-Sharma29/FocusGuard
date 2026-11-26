@@ -11,7 +11,6 @@ Run by the tracker on its first tick and then once per calendar day.
 
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime, timedelta
 
@@ -101,7 +100,8 @@ def _aggregate_to_daily_summaries(cutoff: datetime) -> int:
                  AND period IN ('hourly', 'daily')""",
             (_ts(day_start), _ts(day_end)),
         )
-        avg_score = float(score_row[0]["avg_score"]) if score_row and score_row[0]["avg_score"] else None
+        raw_avg = score_row[0]["avg_score"] if score_row else None
+        avg_score = float(raw_avg) if raw_avg is not None else None
 
         # Get top apps for the day
         top_apps_rows = queries.get_top_distractions(5, day_start, day_end)

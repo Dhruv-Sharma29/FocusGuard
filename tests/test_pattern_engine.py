@@ -1,9 +1,9 @@
 """Tests for the smart procrastination detection engine."""
 
 from focusguard.core.pattern_engine import (
+    PROCRASTINATION_THRESHOLD,
     ActivityContext,
     DetectionResult,
-    PROCRASTINATION_THRESHOLD,
     detect_procrastination,
     get_detection_summary,
 )

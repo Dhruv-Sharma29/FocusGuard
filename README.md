@@ -107,9 +107,9 @@ account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ```bash
 pip install -e ".[dev]"
-pytest                    # 95 tests, ~44% line coverage; UI and most CLI commands untested
-ruff check src            # 94 findings today, 48 auto-fixable
-mypy src                  # strict mode: 31 errors today
+pytest                    # 145 tests, ~73% line coverage; every command has a smoke test
+ruff check src tests      # clean; enforced in CI
+mypy src                  # strict, clean; enforced in CI
 python scripts/screenshots.py   # regenerate docs/images/
 ```
 

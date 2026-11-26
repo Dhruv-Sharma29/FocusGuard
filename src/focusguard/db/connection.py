@@ -23,7 +23,7 @@ console = Console(stderr=True)
 
 # Try to use sqlcipher for encrypted database
 try:
-    from sqlcipher3 import dbapi2 as sqlcipher  # type: ignore[import-untyped]
+    from sqlcipher3 import dbapi2 as sqlcipher
 
     HAS_SQLCIPHER = True
 except ImportError:
@@ -47,6 +47,7 @@ def _get_connection() -> sqlite3.Connection:
     ensure_dirs()
     db_path = str(DB_FILE)
 
+    conn: sqlite3.Connection
     if HAS_SQLCIPHER:
         conn = sqlcipher.connect(db_path)
         key = get_or_create_db_key()
@@ -133,8 +134,8 @@ def query_one(sql: str, params: tuple[Any, ...] = ()) -> sqlite3.Row | None:
     Returns:
         A single sqlite3.Row, or None if no results.
     """
-    conn = _get_connection()
-    return conn.execute(sql, params).fetchone()
+    row: sqlite3.Row | None = _get_connection().execute(sql, params).fetchone()
+    return row
 
 
 def close() -> None:

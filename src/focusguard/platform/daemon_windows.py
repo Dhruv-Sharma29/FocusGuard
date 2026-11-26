@@ -10,7 +10,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 TASK_NAME = "FocusGuard"
 
 

@@ -1,6 +1,6 @@
 """Tests for the blocklist / sensitive site filter."""
 
-from focusguard.security.blocklist import is_sensitive, sanitize_title, REDACTED_TITLE
+from focusguard.security.blocklist import REDACTED_TITLE, is_sensitive, sanitize_title
 
 
 class TestIsSensitive:

@@ -56,7 +56,7 @@ def get_active_window() -> WindowInfo:
 
 def _get_active_window_pywinctl() -> WindowInfo:
     """Use PyWinCtl for cross-platform window detection."""
-    import pywinctl as pwc  # type: ignore[import-untyped]
+    import pywinctl as pwc
 
     window = pwc.getActiveWindow()
     if window is None:
@@ -78,7 +78,7 @@ def _get_active_window_pywinctl() -> WindowInfo:
 
 def _get_active_window_macos() -> WindowInfo:
     """macOS fallback: use AppKit to get the frontmost application."""
-    from AppKit import NSWorkspace  # type: ignore[import-untyped]
+    from AppKit import NSWorkspace
 
     workspace = NSWorkspace.sharedWorkspace()
     active_app = workspace.frontmostApplication()
@@ -93,7 +93,7 @@ def _get_active_window_macos() -> WindowInfo:
 
 def _get_active_window_windows() -> WindowInfo:
     """Windows fallback: use win32gui."""
-    import win32gui  # type: ignore[import-untyped]
+    import win32gui
 
     hwnd = win32gui.GetForegroundWindow()
     title = win32gui.GetWindowText(hwnd) or ""

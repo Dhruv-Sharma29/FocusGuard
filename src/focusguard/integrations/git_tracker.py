@@ -6,11 +6,11 @@ and lines changed. Never sends data externally — all local.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def scan_repo(repo_path: str, days: int = 7) -> RepoSummary | None:
         A RepoSummary, or None if the path is not a valid git repo.
     """
     try:
-        from git import Repo, InvalidGitRepositoryError  # type: ignore[import-untyped]
+        from git import InvalidGitRepositoryError, Repo
     except ImportError:
         logger.warning("GitPython not installed. Install with: pip install focusguard[github]")
         return None
@@ -118,10 +118,8 @@ def scan_repo(repo_path: str, days: int = 7) -> RepoSummary | None:
 
     # Check for uncommitted changes
     has_uncommitted = False
-    try:
+    with contextlib.suppress(Exception):
         has_uncommitted = repo.is_dirty(untracked_files=True)
-    except Exception:
-        pass
 
     return RepoSummary(
         repo_name=repo_name,

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typer
-
 from focusguard.db.models import init_db
 
 

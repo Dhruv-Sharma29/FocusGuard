@@ -110,10 +110,11 @@ local goal summary. Test: `test_coach_help_falls_back_when_llm_fails`.
 
 | Check | Result |
 | --- | --- |
-| `pytest` | 95 passed (78 in v0.1.0) |
-| Line coverage | 44%. `commands/` 23–57%; `ui/dashboard.py`, `ui/report_view.py`, `git_tracker`, `github_api` and `platform/daemon_*` at 0% |
-| `ruff check src` | 94 findings (18 unused imports, 9 `raise … from` missing, 48 auto-fixable) |
-| `mypy src` (strict, as configured) | 31 errors in 12 files |
+| `pytest` | 145 passed (78 in v0.1.0) |
+| Line coverage | 73% (25% in v0.1.0). `commands/` 89%. Lowest: `platform/daemon_*` 0%, `llm.py` 21%, `github_api.py` 26%, `idle.py` 28%, `window.py` 32% (OS and network code, mocked at the command level) |
+| `ruff check src tests` | Clean, enforced in CI (94 findings in v0.1.0). `RUF001`–`003` are ignored: the en dashes and × are deliberate |
+| `mypy src` (strict, `platform = "linux"`) | Clean, enforced in CI (31 errors in v0.1.0) |
 
-`tests/test_cli.py` runs real commands with Typer's `CliRunner` against a temp config file.
-Issue 13 and the remaining commands still have no test.
+Every command has a `--help` test and at least one real run (`tests/test_commands_smoke.py`).
+An autouse fixture in `tests/conftest.py` points every FocusGuard path at a temp folder and swaps the
+OS keyring for a dict, so no test can touch real data, a running tracker or your keychain.

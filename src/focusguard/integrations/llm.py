@@ -17,7 +17,6 @@ file contents, git diffs, or any PII.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from rich.console import Console
 
@@ -64,12 +63,12 @@ def chat(
 def _chat_ollama(system_prompt: str, user_message: str, model: str) -> str:
     """Send a message via Ollama (local LLM)."""
     try:
-        import ollama as ollama_client  # type: ignore[import-untyped]
+        import ollama as ollama_client
     except ImportError:
         raise LLMError(
             "Ollama Python package not installed. "
             "Install with: pip install focusguard[ai]"
-        )
+        ) from None
 
     try:
         response = ollama_client.chat(
@@ -79,25 +78,25 @@ def _chat_ollama(system_prompt: str, user_message: str, model: str) -> str:
                 {"role": "user", "content": user_message},
             ],
         )
-        return response["message"]["content"]  # type: ignore[index]
+        return str(response["message"]["content"])
     except Exception as e:
         if "connection" in str(e).lower():
             raise LLMError(
                 "Cannot connect to Ollama. Is it running? "
                 "Start with: ollama serve"
-            )
-        raise LLMError(f"Ollama error: {e}")
+            ) from e
+        raise LLMError(f"Ollama error: {e}") from e
 
 
 def _chat_openai(system_prompt: str, user_message: str, model: str) -> str:
     """Send a message via OpenAI API."""
     try:
-        from openai import OpenAI  # type: ignore[import-untyped]
+        from openai import OpenAI
     except ImportError:
         raise LLMError(
             "OpenAI Python package not installed. "
             "Install with: pip install focusguard[ai]"
-        )
+        ) from None
 
     api_key = get_secret("openai_api_key")
     if not api_key:
@@ -119,7 +118,7 @@ def _chat_openai(system_prompt: str, user_message: str, model: str) -> str:
         )
         return response.choices[0].message.content or ""
     except Exception as e:
-        raise LLMError(f"OpenAI error: {e}")
+        raise LLMError(f"OpenAI error: {e}") from e
 
 
 def is_available(provider: str | None = None) -> bool:
@@ -133,16 +132,16 @@ def is_available(provider: str | None = None) -> bool:
 
     if provider == "ollama":
         try:
-            import ollama as ollama_client  # type: ignore[import-untyped]
+            import ollama as ollama_client
             ollama_client.list()
             return True
         except Exception:
             return False
     elif provider == "openai":
-        try:
-            import openai  # type: ignore[import-untyped]
-            return get_secret("openai_api_key") is not None
-        except ImportError:
+        import importlib.util
+
+        if importlib.util.find_spec("openai") is None:
             return False
+        return get_secret("openai_api_key") is not None
 
     return False

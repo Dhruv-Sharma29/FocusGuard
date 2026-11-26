@@ -14,7 +14,7 @@ proves it's done. Work goes in order; a phase doesn't start until the one before
 | `privacy blocklist add/remove` and `coach mode` save the config | 05 #4, #9 | `tests/test_cli.py` |
 | `tomli-w` replaces the hand-written TOML writer | 05 #12 | Round-trip test with `\` and `"` |
 | App names go through the blocklist | 05 #6 | `test_blocklisted_app_name_is_redacted` |
-| CI on Linux, macOS, Windows × Python 3.10, 3.12 | — | First green run after the next push |
+| CI on Linux, macOS, Windows × Python 3.10, 3.12 | — | Green on the push of `f16e5cd` |
 
 ## Phase 1 — every message tells the truth ✅
 
@@ -31,7 +31,10 @@ terminal and through a pipe).
 | `start -d` refuses when the OS daemon is installed (no restart loop) | 05 low | `start -d` with the plist present exits with a message |
 | Dashboard footer sized to its content | 05 low | All 5 distractions visible at 38 lines |
 
-## Phase 2 — code health
+## Phase 2 — code health ✅
+
+Done on `main`: ruff and mypy clean and enforced by a `lint` CI job; 145 tests; coverage 73%
+total and 89% for `commands/`.
 
 | Change | Done when |
 | --- | --- |

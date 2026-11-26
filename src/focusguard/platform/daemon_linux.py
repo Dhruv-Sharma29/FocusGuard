@@ -52,9 +52,8 @@ class LinuxDaemon:
         SERVICE_PATH.write_text(service_content)
 
         # Reload systemd and enable the service
-        subprocess.run(["systemctl", "--user", "daemon-reload"], check=True, capture_output=True)
-        subprocess.run(["systemctl", "--user", "enable", SERVICE_NAME], check=True, capture_output=True)
-        subprocess.run(["systemctl", "--user", "start", SERVICE_NAME], check=True, capture_output=True)
+        for args in (["daemon-reload"], ["enable", SERVICE_NAME], ["start", SERVICE_NAME]):
+            subprocess.run(["systemctl", "--user", *args], check=True, capture_output=True)
 
     def uninstall(self) -> None:
         """Stop, disable, and remove the systemd service."""

@@ -6,9 +6,9 @@ with panels for focus score, activity breakdown, timeline, and distractions.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Any
 
-from rich.align import Align
 from rich.console import Console, Group
 from rich.layout import Layout
 from rich.panel import Panel
@@ -103,7 +103,8 @@ def render_dashboard() -> None:
         goals_text = Text.from_markup("\n" + "\n".join(goal_lines) + "\n")
     else:
         goals_text = Text.from_markup(
-            f"\n  [{theme.muted}]No active goals. Run: focusguard goal add \"...\"[/{theme.muted}]\n"
+            f"\n  [{theme.muted}]No active goals. "
+            f"Run: focusguard goal add \"...\"[/{theme.muted}]\n"
         )
 
     left_content = Group(
@@ -160,7 +161,7 @@ def render_dashboard() -> None:
     timeline_table.add_column("Min", justify="right", width=5)
 
     # Group hourly data by hour
-    hours_map: dict[str, list[dict]] = {}
+    hours_map: dict[str, list[dict[str, Any]]] = {}
     for h in hourly_data:
         hour = h["hour"]
         if hour not in hours_map:
@@ -198,7 +199,7 @@ def render_dashboard() -> None:
     for i, d in enumerate(top_distractions, 1):
         app = d["app_name"]
         title = d.get("window_title")
-        
+
         if title and title != "[private]":
             display_name = f"{app}: {title}"
             # Truncate to prevent breaking the table layout
@@ -206,7 +207,7 @@ def render_dashboard() -> None:
                 display_name = display_name[:67] + "..."
         else:
             display_name = app
-            
+
         dist_table.add_row(str(i), display_name, _fmt_time(d["total_minutes"]))
 
     if not top_distractions:
@@ -239,8 +240,9 @@ def render_quick_stats() -> None:
     first = queries.get_first_activity_time(today_start)
     since = f"Since {first.strftime('%I:%M %p')}" if first else "No activity yet today"
 
+    style = score_style(theme, score)
     console.print(
-        f"  {emoji} Focus: [{score_style(theme, score)}]{score:.0f}/100[/{score_style(theme, score)}] {trend}"
+        f"  {emoji} Focus: [{style}]{score:.0f}/100[/{style}] {trend}"
         f"  │  ⌨️  [{theme.success}]{_fmt_time(coding_min)}[/{theme.success}]"
         f"  │  📱 [{theme.danger}]{_fmt_time(distraction_min)}[/{theme.danger}]"
         f"  │  {since}"

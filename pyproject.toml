@@ -36,7 +36,7 @@ dependencies = [
 encrypted = ["sqlcipher3-binary>=0.5"]
 ai = ["openai>=1.0", "ollama>=0.3"]
 github = ["gitpython>=3.1", "PyGithub>=2.0"]
-dev = ["pytest>=8.0", "pytest-cov", "ruff", "mypy"]
+dev = ["pytest>=8.0", "pytest-cov", "ruff", "mypy", "types-psutil"]
 all = ["focusguard[encrypted,ai,github,dev]"]
 
 [project.scripts]
@@ -61,11 +61,23 @@ src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "RUF"]
+# En dashes and × in text are deliberate (window.py splits titles on " – ").
+ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.mypy]
 python_version = "3.10"
 strict = true
 packages = ["focusguard"]
+# Same answer on every OS (windll, AppKit and launchd code exist on one platform each).
+platform = "linux"
+
+# Optional extras, OS-specific modules, and tomli on 3.10 may not be installed where mypy runs.
+[[tool.mypy.overrides]]
+module = [
+    "git", "github", "ollama", "openai", "sqlcipher3", "sqlcipher3.*", "tomli",
+    "AppKit", "win32gui",
+]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

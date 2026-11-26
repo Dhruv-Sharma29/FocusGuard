@@ -24,7 +24,7 @@ Extras, combinable as `".[encrypted,ai,github]"`:
 | `encrypted` | SQLCipher, so the database is encrypted with a key kept in the OS keyring | Database is **plain SQLite**; commands that open it print a warning |
 | `ai` | Ollama and OpenAI clients for `coach help` | Personality modes still work from local templates |
 | `github` | GitPython and PyGithub for `github summary` / `github repos` | Those commands print an install hint |
-| `dev` | pytest, ruff, mypy | — |
+| `dev` | pytest, ruff, mypy, types-psutil | — |
 
 Want `focusguard` on your PATH outside the venv? `pipx install ".[encrypted]"` from the repo root.
 

@@ -12,10 +12,8 @@ runner = CliRunner()
 
 
 @pytest.fixture
-def config_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(cfg, "CONFIG_DIR", tmp_path)
-    monkeypatch.setattr(cfg, "CONFIG_FILE", tmp_path / "config.toml")
-    return tmp_path / "config.toml"
+def config_file():
+    return cfg.CONFIG_FILE  # already a temp path (conftest.isolate)
 
 
 def test_blocklist_add_and_remove_persist(config_file):

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 
 from focusguard.config import CONFIG_DIR, DATA_DIR, DB_FILE, LOG_DIR, load_config, save_config
@@ -68,7 +68,11 @@ def show_privacy() -> None:
     db_size = f"{DB_FILE.stat().st_size / 1024:.1f} KB" if db_exists else "not created"
 
     from focusguard.db.connection import HAS_SQLCIPHER
-    encryption = f"[{theme.success}]encrypted (SQLCipher)[/{theme.success}]" if HAS_SQLCIPHER else f"[{theme.warning}]NOT encrypted[/{theme.warning}]"
+    encryption = (
+        f"[{theme.success}]encrypted (SQLCipher)[/{theme.success}]"
+        if HAS_SQLCIPHER
+        else f"[{theme.warning}]NOT encrypted[/{theme.warning}]"
+    )
 
     storage.add_row("Database", str(DB_FILE))
     storage.add_row("DB Size", db_size)
@@ -77,7 +81,8 @@ def show_privacy() -> None:
     storage.add_row("Logs", str(LOG_DIR))
     storage.add_row("Secrets", "OS Keyring (Keychain / Credential Manager)")
     storage.add_row("Telemetry", f"[{theme.success}]NONE — zero phone-home[/{theme.success}]")
-    storage.add_row("Auto-delete", f"Raw logs older than {load_config().security.retention_days} days")
+    retention_days = load_config().security.retention_days
+    storage.add_row("Auto-delete", f"Raw logs older than {retention_days} days")
 
     console.print()
     console.print(tracked)
@@ -109,7 +114,8 @@ def manage_blocklist(
 
     if action == "list":
         blocklist = config.security.blocklist
-        console.print(f"\n  [{theme.primary}]Current blocklist ({len(blocklist)} patterns):[/{theme.primary}]")
+        heading = f"Current blocklist ({len(blocklist)} patterns):"
+        console.print(f"\n  [{theme.primary}]{heading}[/{theme.primary}]")
         for i, p in enumerate(blocklist, 1):
             console.print(f"  {i:3d}. [{theme.muted}]{p}[/{theme.muted}]")
         console.print()
@@ -192,11 +198,10 @@ def uninstall(
     from focusguard.core.tracker import get_tracker_pid
     pid = get_tracker_pid()
     if pid:
-        import os, signal
-        try:
+        import os
+        import signal
+        with contextlib.suppress(Exception):
             os.kill(pid, signal.SIGTERM)
-        except Exception:
-            pass
 
     # Uninstall daemon
     try:

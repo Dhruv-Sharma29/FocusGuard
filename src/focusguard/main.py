@@ -6,7 +6,7 @@ Entry point: `focusguard` (registered in pyproject.toml).
 
 from __future__ import annotations
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -35,7 +35,7 @@ def version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option("--version", "-v", help="Show version and exit.",
                      callback=version_callback, is_eager=True),
     ] = None,
@@ -45,15 +45,15 @@ def main(
 
 # ── Import and register commands ─────────────────────────────────────────────
 
-from focusguard.commands.start import start  # noqa: E402
-from focusguard.commands.stop import stop  # noqa: E402
-from focusguard.commands.report import report  # noqa: E402
-from focusguard.commands.stats import stats  # noqa: E402
-from focusguard.commands.goal import goal_app  # noqa: E402
-from focusguard.commands.daemon import daemon_app  # noqa: E402
 from focusguard.commands.coach import coach_app  # noqa: E402
+from focusguard.commands.daemon import daemon_app  # noqa: E402
 from focusguard.commands.github_cmd import github_app  # noqa: E402
+from focusguard.commands.goal import goal_app  # noqa: E402
 from focusguard.commands.privacy import privacy_app  # noqa: E402
+from focusguard.commands.report import report  # noqa: E402
+from focusguard.commands.start import start  # noqa: E402
+from focusguard.commands.stats import stats  # noqa: E402
+from focusguard.commands.stop import stop  # noqa: E402
 
 app.command()(start)
 app.command()(stop)

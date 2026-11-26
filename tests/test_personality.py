@@ -4,13 +4,12 @@ from focusguard.personality.modes import (
     PersonalityMode,
     generate_nudge_message,
     get_personality,
-    PERSONALITIES,
 )
 from focusguard.personality.prompts import (
-    get_system_prompt,
-    format_help_prompt,
-    format_breakdown_prompt,
     SYSTEM_PROMPTS,
+    format_breakdown_prompt,
+    format_help_prompt,
+    get_system_prompt,
 )
 
 

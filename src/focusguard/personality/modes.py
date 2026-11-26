@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class PersonalityMode(str, Enum):
@@ -76,7 +77,7 @@ def get_personality(mode: str = "coach") -> Personality:
     return PERSONALITIES.get(mode, PERSONALITIES["coach"])
 
 
-def generate_nudge_message(mode: str, context: dict) -> str:
+def generate_nudge_message(mode: str, context: dict[str, Any]) -> str:
     """Generate a personality-appropriate nudge message without AI.
 
     Uses templates for quick, local responses when AI is not enabled.
@@ -117,11 +118,20 @@ def generate_nudge_message(mode: str, context: dict) -> str:
 
     elif mode == "friend":
         if score >= 80:
-            return f"🤝 Hey, you're doing amazing! {coding:.0f} min of solid work. Take a breather if you need it 💙"
+            return (
+                f"🤝 Hey, you're doing amazing! {coding:.0f} min of solid work. "
+                "Take a breather if you need it 💙"
+            )
         elif score >= 50:
-            return f"🤝 You've been at this for a while. Need a break? Sometimes stepping away helps."
+            return (
+                "🤝 You've been at this for a while. Need a break? "
+                "Sometimes stepping away helps."
+            )
         else:
-            return f"🤝 Hey, I noticed you've been a bit scattered. No judgment — want to talk through what's blocking you?"
+            return (
+                "🤝 Hey, I noticed you've been a bit scattered. "
+                "No judgment — want to talk through what's blocking you?"
+            )
 
     elif mode == "roast":
         if score >= 80:

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Annotated, Optional
+from datetime import datetime, timedelta
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -47,7 +47,9 @@ def enable_ai(
     config.ai.provider = provider
     save_config(config)
 
-    console.print(f"\n  [green]✓[/green] AI coaching enabled with provider: [cyan]{provider}[/cyan]")
+    console.print(
+        f"\n  [green]✓[/green] AI coaching enabled with provider: [cyan]{provider}[/cyan]"
+    )
     if provider == "ollama":
         console.print("  [dim]Make sure Ollama is running: ollama serve[/dim]")
         console.print("  [dim]Pull the default model: ollama pull llama3.2:3b[/dim]")
@@ -62,8 +64,10 @@ def disable_ai() -> None:
     config = load_config()
     config.ai.enabled = False
     save_config(config)
-    
-    console.print("\n  [yellow]■[/yellow] AI coaching disabled. Using local text templates instead.\n")
+
+    console.print(
+        "\n  [yellow]■[/yellow] AI coaching disabled. Using local text templates instead.\n"
+    )
 
 
 @coach_app.command("setup-openai")
@@ -153,12 +157,13 @@ def _run_personality_report(mode: str) -> None:
             system_prompt = get_system_prompt(mode)
             user_msg = (
                 f"My focus score is {score:.0f}/100. "
-                f"I've coded for {coding_min:.0f} min and been distracted for {distraction_min:.0f} min. "
+                f"I've coded for {coding_min:.0f} min and been distracted "
+                f"for {distraction_min:.0f} min. "
                 f"Top distraction: {top_dist_name}. "
                 f"Current goal: {goal_desc}."
             )
             message = chat(system_prompt, user_msg)
-        except Exception as e:
+        except Exception:
             message = None  # Fall through to template
 
     if message is None:
@@ -192,7 +197,7 @@ def _run_help(breakdown: bool = False) -> None:
     active_goals = queries.get_active_goals()
     if not active_goals:
         console.print(f"\n  [{theme.warning}]⚠ No active goal set.[/{theme.warning}]")
-        console.print(f"  [dim]Set one first: focusguard goal add \"...\"[/dim]\n")
+        console.print("  [dim]Set one first: focusguard goal add \"...\"[/dim]\n")
         return
 
     goal = active_goals[0]
@@ -211,7 +216,7 @@ def _run_help(breakdown: bool = False) -> None:
         time_str = "unknown"
 
     # Get recent apps (names only — no titles or URLs)
-    recent_activity = queries.get_activity_range(now - __import__("datetime").timedelta(minutes=30), now)
+    recent_activity = queries.get_activity_range(now - timedelta(minutes=30), now)
     recent_apps = list(dict.fromkeys(a["app_name"] for a in recent_activity[-5:]))
     recent_apps_str = ", ".join(recent_apps) if recent_apps else "none detected"
 

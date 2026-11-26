@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -47,7 +47,9 @@ def start(
             # service manager doesn't restart us every few seconds.
             raise typer.Exit(0)
         console.print("[yellow]⚠ FocusGuard is already running.[/yellow]")
-        console.print("[dim]Use 'focusguard stop' first, or 'focusguard stats' to see current data.[/dim]")
+        console.print(
+            "[dim]Use 'focusguard stop' first, or 'focusguard stats' to see current data.[/dim]"
+        )
         raise typer.Exit(1)
 
     # Check macOS permissions
@@ -55,7 +57,8 @@ def start(
         from focusguard.platform.window import check_accessibility_permissions
         if not check_accessibility_permissions():
             console.print(
-                "[yellow]⚠ Accessibility permissions may be required for full window tracking.[/yellow]"
+                "[yellow]⚠ Accessibility permissions may be required "
+                "for full window tracking.[/yellow]"
             )
             console.print(
                 "[dim]Go to: System Settings → Privacy & Security → Accessibility[/dim]"
@@ -81,7 +84,6 @@ def start(
 
 def _launch_daemon() -> None:
     """Launch FocusGuard as a detached background process."""
-    import os
     import subprocess
 
     python = sys.executable
@@ -107,8 +109,10 @@ def _launch_daemon() -> None:
             )
 
         console.print(f"[green]✓[/green] FocusGuard daemon started (PID: {process.pid})")
-        console.print("[dim]Use 'focusguard stop' to stop, 'focusguard stats' for quick status.[/dim]")
+        console.print(
+            "[dim]Use 'focusguard stop' to stop, 'focusguard stats' for quick status.[/dim]"
+        )
 
     except Exception as e:
         console.print(f"[red]✗ Failed to start daemon: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

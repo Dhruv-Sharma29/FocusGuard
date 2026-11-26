@@ -18,8 +18,8 @@ def stop() -> None:
 
     Sends a graceful shutdown signal to the running tracker process.
     """
-    from focusguard.core.tracker import get_tracker_pid
     from focusguard.config import PID_FILE
+    from focusguard.core.tracker import get_tracker_pid
 
     pid = get_tracker_pid()
 
@@ -53,4 +53,4 @@ def stop() -> None:
 
     except PermissionError:
         console.print("[red]✗ Permission denied. Try running with elevated privileges.[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

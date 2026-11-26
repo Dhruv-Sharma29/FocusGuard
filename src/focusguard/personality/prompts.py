@@ -6,7 +6,6 @@ Only used when AI is enabled and the user explicitly triggers it.
 
 from __future__ import annotations
 
-
 SYSTEM_PROMPTS: dict[str, str] = {
     "coach": """\
 You are a supportive productivity coach helping a developer stay focused.

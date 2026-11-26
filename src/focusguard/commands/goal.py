@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from focusguard.db.models import init_db
-from focusguard.db import queries
 from focusguard.config import load_config
+from focusguard.db import queries
+from focusguard.db.models import init_db
 from focusguard.ui.themes import get_theme
 
 console = Console()
@@ -67,7 +67,7 @@ def list_goals(
         created = g.get("created_at", "")
 
         if g.get("completed_at"):
-            status = f"[green]✓ Done[/green]"
+            status = "[green]✓ Done[/green]"
         elif g.get("is_active"):
             status = f"[{theme.warning}]● Active[/{theme.warning}]"
         else:

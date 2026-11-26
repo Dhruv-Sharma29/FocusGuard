@@ -7,6 +7,7 @@ systemd (Linux), or Task Scheduler (Windows).
 from __future__ import annotations
 
 import sys
+from typing import Protocol
 
 import typer
 from rich.console import Console
@@ -30,7 +31,7 @@ def install() -> None:
         console.print("[dim]It will start automatically on login.[/dim]")
     except Exception as e:
         console.print(f"[red]✗ Failed to install daemon: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @daemon_app.command()
@@ -42,13 +43,13 @@ def uninstall() -> None:
         console.print("[green]✓[/green] FocusGuard daemon uninstalled")
     except Exception as e:
         console.print(f"[red]✗ Failed to uninstall daemon: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @daemon_app.command()
 def status() -> None:
     """Check if the background daemon is running."""
-    from focusguard.core.tracker import is_tracker_running, get_tracker_pid
+    from focusguard.core.tracker import get_tracker_pid, is_tracker_running
 
     if is_tracker_running():
         pid = get_tracker_pid()
@@ -58,7 +59,13 @@ def status() -> None:
         console.print("[dim]Start with: focusguard start -d[/dim]")
 
 
-def _get_platform_handler():  # type: ignore[no-untyped-def]
+class DaemonHandler(Protocol):
+    def install(self) -> None: ...
+    def uninstall(self) -> None: ...
+    def is_installed(self) -> bool: ...
+
+
+def _get_platform_handler() -> DaemonHandler:
     """Get the appropriate daemon handler for the current platform."""
     if sys.platform == "darwin":
         from focusguard.platform.daemon_macos import MacOSDaemon

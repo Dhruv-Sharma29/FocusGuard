@@ -48,7 +48,8 @@ class TrackerConfig:
             "code", "visual studio", "vscode", "pycharm", "intellij", "webstorm",
             "sublime", "atom", "neovim", "vim", "emacs", "terminal", "iterm",
             "warp", "alacritty", "kitty", "hyper", "xcode", "android studio",
-            "cursor", "zed", "electron", ".py", ".md", ".json", ".js", ".ts", ".rs", ".go", ".html", ".css",
+            "cursor", "zed", "electron",
+            ".py", ".md", ".json", ".js", ".ts", ".rs", ".go", ".html", ".css",
             "leetcode", "github", "stackoverflow",
         ],
         "browser": [

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -14,7 +14,7 @@ console = Console()
 
 def report(
     period: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--period", "-p",
                      help="Report period: 'today' (default), 'week', or 'month'."),
     ] = "today",

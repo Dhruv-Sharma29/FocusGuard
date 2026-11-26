@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from focusguard.security.keyring_store import get_secret, store_secret
 
@@ -59,7 +58,7 @@ def get_weekly_summary(days: int = 7) -> GitHubSummary | None:
         A GitHubSummary, or None if not configured.
     """
     try:
-        from github import Github  # type: ignore[import-untyped]
+        from github import Github
     except ImportError:
         logger.warning("PyGithub not installed. Install with: pip install focusguard[github]")
         return None
@@ -116,7 +115,9 @@ def get_weekly_summary(days: int = 7) -> GitHubSummary | None:
 
             # Count issues
             try:
-                issues = repo.get_issues(state="all", sort="created", direction="desc", creator=username)
+                issues = repo.get_issues(
+                    state="all", sort="created", direction="desc", creator=username
+                )
                 for issue in issues:
                     if issue.created_at < since:
                         break

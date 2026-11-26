@@ -14,9 +14,9 @@ looks like distraction but isn't.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Callable
 
 from focusguard.db import queries
 

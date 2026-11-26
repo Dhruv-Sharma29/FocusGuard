@@ -9,7 +9,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 
 from focusguard.config import load_config
@@ -30,7 +29,6 @@ def render_period_report(days: int = 7) -> None:
     theme = get_theme(config.personality.mode)
 
     now = datetime.now()
-    period_start = now - timedelta(days=days)
 
     # Daily breakdown table
     table = Table(
@@ -85,7 +83,7 @@ def render_period_report(days: int = 7) -> None:
     avg_style = score_style(theme, avg_score)
     table.add_section()
     table.add_row(
-        f"[bold]Average[/bold]",
+        "[bold]Average[/bold]",
         f"[{avg_style}]{avg_score:.0f}[/{avg_style}]",
         f"[bold]{_fmt_time(total_coding / max(days, 1))}[/bold]/day",
         f"[bold]{_fmt_time(total_distraction / max(days, 1))}[/bold]/day",

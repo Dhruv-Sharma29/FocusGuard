@@ -13,13 +13,12 @@ via a threading.Event signal.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import re
 import signal
-import sys
 import threading
-import time
 from datetime import date, datetime, timedelta
 
 import psutil
@@ -31,7 +30,7 @@ from focusguard.core.scorer import snapshot_score
 from focusguard.db.models import init_db
 from focusguard.db.queries import log_activity
 from focusguard.platform.idle import get_idle_seconds
-from focusguard.platform.window import WindowInfo, get_active_window
+from focusguard.platform.window import get_active_window
 from focusguard.security.blocklist import sanitize_title
 
 logger = logging.getLogger(__name__)
@@ -204,10 +203,8 @@ class ActivityTracker:
 
     def _remove_pid_file(self) -> None:
         """Remove the PID file on shutdown."""
-        try:
+        with contextlib.suppress(Exception):
             PID_FILE.unlink(missing_ok=True)
-        except Exception:
-            pass
 
 
 def is_tracker_running() -> bool:

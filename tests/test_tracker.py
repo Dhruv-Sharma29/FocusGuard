@@ -1,6 +1,6 @@
 """Tests for the activity tracker classification logic."""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from focusguard.core.tracker import ActivityTracker
 

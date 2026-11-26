@@ -6,7 +6,6 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 
 from focusguard.config import load_config
@@ -73,7 +72,8 @@ def summary(
     table.add_row("PRs Opened", str(result.total_prs_opened))
     table.add_row("PRs Merged", f"[{theme.success}]{result.total_prs_merged}[/{theme.success}]")
     table.add_row("Issues Opened", str(result.total_issues_opened))
-    table.add_row("Issues Closed", f"[{theme.success}]{result.total_issues_closed}[/{theme.success}]")
+    closed = result.total_issues_closed
+    table.add_row("Issues Closed", f"[{theme.success}]{closed}[/{theme.success}]")
     table.add_row("Most Active Repo", result.most_active_repo or "—")
     table.add_row(
         "Repos Contributed",
@@ -119,7 +119,11 @@ def scan_local(
     table.add_column("Dirty", justify="center")
 
     for s in sorted(summaries, key=lambda x: x.commits_24h, reverse=True):
-        dirty = f"[{theme.warning}]●[/{theme.warning}]" if s.has_uncommitted else f"[{theme.muted}]—[/{theme.muted}]"
+        dirty = (
+            f"[{theme.warning}]●[/{theme.warning}]"
+            if s.has_uncommitted
+            else f"[{theme.muted}]—[/{theme.muted}]"
+        )
         table.add_row(
             s.repo_name,
             f"[{theme.success}]{s.commits_24h}[/{theme.success}]",

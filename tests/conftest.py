@@ -8,14 +8,61 @@ from __future__ import annotations
 
 import sqlite3
 import threading
-from collections.abc import Generator
 from unittest.mock import patch
 
 import pytest
 
+_PATH_NAMES = ("CONFIG_DIR", "CONFIG_FILE", "DATA_DIR", "LOG_DIR", "DB_FILE", "PID_FILE")
+
 
 @pytest.fixture(autouse=True)
-def mock_db(tmp_path):
+def isolate(tmp_path, monkeypatch):
+    """Keep every test off the real config, data, PID file and OS keyring.
+
+    Paths are patched in every loaded focusguard module (they are imported by name),
+    which also works on Windows, where platformdirs ignores HOME.
+    """
+    import sys
+
+    import keyring
+
+    import focusguard.core.tracker
+    import focusguard.main  # noqa: F401  (loads every command module before patching)
+    from focusguard import config
+
+    home = tmp_path / "fg"
+    paths = {
+        "CONFIG_DIR": home / "config",
+        "DATA_DIR": home / "data",
+        "LOG_DIR": home / "log",
+    }
+    paths["CONFIG_FILE"] = paths["CONFIG_DIR"] / "config.toml"
+    paths["DB_FILE"] = paths["DATA_DIR"] / "focus.db"
+    paths["PID_FILE"] = paths["DATA_DIR"] / "focusguard.pid"
+    assert set(paths) == set(_PATH_NAMES)
+    modules = [m for name, m in list(sys.modules.items()) if name.startswith("focusguard")]
+    for module in [config, *modules]:
+        for name, value in paths.items():
+            if hasattr(module, name):
+                monkeypatch.setattr(module, name, value)
+
+    secrets: dict[tuple[str, str], str] = {}
+    monkeypatch.setattr(keyring, "get_password", lambda s, n: secrets.get((s, n)))
+    monkeypatch.setattr(keyring, "set_password", lambda s, n, v: secrets.__setitem__((s, n), v))
+
+    def delete_password(s: str, n: str) -> None:
+        from keyring.errors import PasswordDeleteError
+
+        if (s, n) not in secrets:
+            raise PasswordDeleteError(n)
+        del secrets[(s, n)]
+
+    monkeypatch.setattr(keyring, "delete_password", delete_password)
+    return secrets
+
+
+@pytest.fixture(autouse=True)
+def mock_db(tmp_path, isolate):
     """Replace the database with a temporary unencrypted SQLite file.
 
     This fixture patches the connection module so tests never touch

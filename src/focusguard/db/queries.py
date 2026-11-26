@@ -262,7 +262,8 @@ def save_focus_score(
         The ID of the inserted row.
     """
     cursor = execute(
-        """INSERT INTO focus_scores (score, coding_minutes, distraction_minutes, total_minutes, period)
+        """INSERT INTO focus_scores
+               (score, coding_minutes, distraction_minutes, total_minutes, period)
            VALUES (?, ?, ?, ?, ?)""",
         (score, coding_min, distraction_min, total_min, period),
     )
