@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 from unittest.mock import MagicMock, patch
 
+import psutil
 import pytest
 from typer.testing import CliRunner
 
@@ -80,14 +81,27 @@ def test_stop():
 
     cfg.PID_FILE.parent.mkdir(parents=True, exist_ok=True)
     cfg.PID_FILE.write_text("4242")
+    # psutil.Process is fully mocked: no real process is ever signalled.
     with (
-        patch("psutil.pid_exists", side_effect=[True, True, False]),
-        patch("os.kill") as kill,
-        patch("time.sleep"),
+        patch("focusguard.core.tracker.psutil.pid_exists", return_value=True),
+        patch("focusguard.commands.stop.psutil.Process") as process,
     ):
         result = run("stop")
-    assert result.exit_code == 0, result.output
-    assert kill.call_args.args[0] == 4242
+        assert result.exit_code == 0, result.output
+        process.assert_called_with(4242)
+        process.return_value.terminate.assert_called_once()
+
+        process.side_effect = psutil.NoSuchProcess(4242)
+        result = run("stop")
+        assert result.exit_code == 0, result.output
+        assert not cfg.PID_FILE.exists()  # stale PID file cleaned up
+
+    cfg.PID_FILE.write_text("4242")
+    with (
+        patch("focusguard.core.tracker.psutil.pid_exists", return_value=True),
+        patch("focusguard.commands.stop.psutil.Process", side_effect=psutil.AccessDenied(4242)),
+    ):
+        assert run("stop").exit_code == 1
 
 
 # ── Goals ────────────────────────────────────────────────────────────────────
