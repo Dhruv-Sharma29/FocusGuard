@@ -35,7 +35,7 @@ def show_privacy() -> None:
     tracked.add_row("App category", "coding, browser, entertainment, etc.")
     tracked.add_row("Duration per app", "How long each app was in focus")
     tracked.add_row("Focus score", "Computed locally from activity data")
-    tracked.add_row("Git commits", "Count and messages from local repos")
+    tracked.add_row("Git commits", "Counts only, computed on demand; nothing stored")
     tracked.add_row("Goals", "User-set goals and completion status")
 
     not_tracked = Table(

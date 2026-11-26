@@ -42,6 +42,10 @@ def start(
 
     # Check if already running
     if is_tracker_running():
+        if daemon_mode:
+            # Launched by launchd/systemd while a manual tracker runs: exit 0 so the
+            # service manager doesn't restart us every few seconds.
+            raise typer.Exit(0)
         console.print("[yellow]⚠ FocusGuard is already running.[/yellow]")
         console.print("[dim]Use 'focusguard stop' first, or 'focusguard stats' to see current data.[/dim]")
         raise typer.Exit(1)
@@ -62,6 +66,12 @@ def start(
             console.print()
 
     if daemon and not daemon_mode:
+        from focusguard.commands.daemon import _get_platform_handler
+
+        if _get_platform_handler().is_installed():
+            console.print("[yellow]⚠ The daemon is installed and runs the tracker.[/yellow]")
+            console.print("[dim]Check it with 'focusguard daemon status'.[/dim]")
+            raise typer.Exit(1)
         _launch_daemon()
     else:
         # Run in foreground (or as daemon-mode subprocess)

@@ -10,9 +10,9 @@ defaults. Behaviour notes flag where a command doesn't do what its output says.
 | Command | Does |
 | --- | --- |
 | `focusguard start` | Run the tracker in the foreground. Ctrl+C stops it. Refuses if a tracker is already running. |
-| `focusguard start -d` / `--daemon` | Start a detached tracker (`--daemon-mode` child) and return. Lives until logout or `stop`. |
+| `focusguard start -d` / `--daemon` | Start a detached tracker (`--daemon-mode` child) and return. Lives until logout or `stop`. Refuses when the OS daemon is installed. |
 | `focusguard stop` | SIGTERM the tracker from the PID file, wait up to 5 s. |
-| `focusguard stats` | One line: score, trend, coding and distraction time today. ("Since" always shows 12:00 AM.) |
+| `focusguard stats` | One line: score, trend, coding and distraction time today, since the first activity today. |
 | `focusguard report` | Full dashboard for today. |
 | `focusguard report -p week` · `-p month` | Per-day table for the last 7 / 30 days. Commits column repeats today's count on every row (and that count is always 0). |
 
@@ -35,7 +35,7 @@ defaults. Behaviour notes flag where a command doesn't do what its output says.
 | --- | --- |
 | `nudge` | Message in the configured mode: LLM if `[ai] enabled`, else a local template. |
 | `roast` (also top-level `focusguard roast`) | Same, always in roast mode. |
-| `help` · `help -b` / `--breakdown` | Ask the LLM about your newest active goal; `-b` asks for subtasks. Without AI enabled it prints your goal, time on it and recent apps. Hidden alias: `focusguard help-me`. |
+| `help` · `help -b` / `--breakdown` | Ask the LLM about your newest active goal; `-b` asks for subtasks. Without AI enabled, or if the LLM call fails, it prints your goal, time on it and recent apps. Hidden alias: `focusguard help-me`. |
 | `mode <coach\|strict\|friend\|roast>` | Switch and save `[personality] mode`. |
 | `enable` · `enable -p openai` | Set `[ai] enabled = true` and the provider (default `ollama`); rewrites the config file. |
 | `disable` | Set `[ai] enabled = false`. |

@@ -46,6 +46,15 @@ def log_activity(
     return cursor.lastrowid or 0
 
 
+def get_first_activity_time(since: datetime) -> datetime | None:
+    """Timestamp of the first activity row at or after `since`, or None."""
+    row = query_one(
+        "SELECT MIN(timestamp) AS first FROM activity_log WHERE timestamp >= ?",
+        (_ts(since),),
+    )
+    return datetime.fromisoformat(row["first"]) if row and row["first"] else None
+
+
 def get_activity_range(
     start: datetime, end: datetime | None = None
 ) -> list[dict[str, Any]]:

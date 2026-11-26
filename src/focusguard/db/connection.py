@@ -31,6 +31,7 @@ except ImportError:
 
 # Thread-local storage for connections (one connection per thread)
 _local = threading.local()
+_warned_plaintext = False
 
 
 def _get_connection() -> sqlite3.Connection:
@@ -39,6 +40,7 @@ def _get_connection() -> sqlite3.Connection:
     Returns:
         A sqlite3-compatible connection object.
     """
+    global _warned_plaintext
     if hasattr(_local, "connection") and _local.connection is not None:
         return _local.connection  # type: ignore[no-any-return]
 
@@ -50,12 +52,13 @@ def _get_connection() -> sqlite3.Connection:
         key = get_or_create_db_key()
         conn.execute(f"PRAGMA key = '{key}';")
     else:
-        console.print(
-            "[yellow]⚠ sqlcipher3 not installed — database is NOT encrypted.[/yellow]"
-        )
-        console.print(
-            "[dim]Install with: pip install sqlcipher3-binary[/dim]"
-        )
+        # Once per process, and not into the daemon's log file.
+        if not _warned_plaintext and console.is_terminal:
+            console.print(
+                "[yellow]⚠ sqlcipher3 not installed — database is NOT encrypted.[/yellow]"
+            )
+            console.print("[dim]Install with: pip install sqlcipher3-binary[/dim]")
+        _warned_plaintext = True
         conn = sqlite3.connect(db_path)
 
     # Enable WAL mode for concurrent reads during report generation

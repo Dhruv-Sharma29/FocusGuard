@@ -218,13 +218,17 @@ def _run_help(breakdown: bool = False) -> None:
     from focusguard.core.scorer import calculate_focus_score
     score = calculate_focus_score(today_start, now)
 
-    if not config.ai.enabled:
-        console.print(f"\n  [{theme.warning}]⚠ AI is not enabled.[/{theme.warning}]")
-        console.print(f"  [dim]Enable with: focusguard coach enable[/dim]")
+    def local_summary() -> None:
         console.print(f"\n  [{theme.primary}]Current goal:[/{theme.primary}] {goal_desc}")
         console.print(f"  [{theme.muted}]Working for: {time_str}[/{theme.muted}]")
         console.print(f"  [{theme.muted}]Recent apps: {recent_apps_str}[/{theme.muted}]")
-        console.print(f"\n  [dim]💡 Try rubber ducking: explain what you're stuck on out loud.[/dim]\n")
+        tip = "💡 Try rubber ducking: explain what you're stuck on out loud."
+        console.print(f"\n  [dim]{tip}[/dim]\n")
+
+    if not config.ai.enabled:
+        console.print(f"\n  [{theme.warning}]⚠ AI is not enabled.[/{theme.warning}]")
+        console.print("  [dim]Enable with: focusguard coach enable[/dim]")
+        local_summary()
         return
 
     try:
@@ -257,4 +261,5 @@ def _run_help(breakdown: bool = False) -> None:
 
     except Exception as e:
         console.print(f"\n  [red]✗ AI error: {e}[/red]")
-        console.print(f"  [dim]Falling back to local mode.[/dim]\n")
+        console.print("  [dim]Falling back to local mode.[/dim]")
+        local_summary()

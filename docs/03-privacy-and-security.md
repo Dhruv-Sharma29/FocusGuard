@@ -12,7 +12,7 @@ prints. Each row says whether the claim is true in v0.1.0.
 | Category, duration, idle flag | `activity_log` | One row per tick. |
 | Focus score snapshots | `focus_scores` | ~1,440 `session` rows a day while tracking, pruned after a day. |
 | Goals | `goals` | Free text you typed. |
-| Git data | nothing persisted | `github repos` and `github summary` compute and print. The privacy screen says commit messages are tracked, but nothing writes them to the DB. |
+| Git data | nothing persisted | `github repos` and `github summary` compute and print. Nothing is written to the DB (v0.1.0's privacy screen wrongly said commit messages were tracked). |
 
 Never collected anywhere in the code: keystrokes, clipboard, screenshots, URLs (beyond what a
 browser puts in its window title), file contents, network traffic.

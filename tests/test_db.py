@@ -145,3 +145,17 @@ def test_retention_summarises_and_prunes(mock_db):
     assert summary["avg_focus_score"] == 80.0  # found only with the space-separated timestamp
     assert [r["window_title"] for r in query("SELECT window_title FROM activity_log")] == ["new.py"]
     assert [r["score"] for r in query("SELECT score FROM focus_scores")] == [75.0]
+
+
+def test_first_activity_time(mock_db):
+    from datetime import datetime
+
+    from focusguard.db.connection import execute
+
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    assert queries.get_first_activity_time(today) is None
+    queries.log_activity("Code", "a.py", "coding", 60, False)
+    queries.log_activity("Code", "b.py", "coding", 60, False)
+    execute(f"UPDATE activity_log SET timestamp = '{today:%Y-%m-%d} 09:30:00' WHERE id = 1")
+    execute(f"UPDATE activity_log SET timestamp = '{today:%Y-%m-%d} 11:00:00' WHERE id = 2")
+    assert queries.get_first_activity_time(today) == today.replace(hour=9, minute=30)

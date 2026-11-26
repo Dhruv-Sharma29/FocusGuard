@@ -55,7 +55,8 @@ def render_dashboard() -> None:
     layout.split_column(
         Layout(name="header", size=3),
         Layout(name="body"),
-        Layout(name="footer", size=7),
+        # Panel (2) + table borders, header and separator (4) + one line per row.
+        Layout(name="footer", size=max(len(top_distractions), 1) + 6),
     )
     layout["body"].split_row(
         Layout(name="left", ratio=1),
@@ -235,12 +236,14 @@ def render_quick_stats() -> None:
     distraction_min = queries.get_distraction_minutes(today_start, now)
     trend = get_trend()
     emoji = get_score_emoji(score)
+    first = queries.get_first_activity_time(today_start)
+    since = f"Since {first.strftime('%I:%M %p')}" if first else "No activity yet today"
 
     console.print(
         f"  {emoji} Focus: [{score_style(theme, score)}]{score:.0f}/100[/{score_style(theme, score)}] {trend}"
         f"  │  ⌨️  [{theme.success}]{_fmt_time(coding_min)}[/{theme.success}]"
         f"  │  📱 [{theme.danger}]{_fmt_time(distraction_min)}[/{theme.danger}]"
-        f"  │  Since {today_start.strftime('%I:%M %p')}"
+        f"  │  {since}"
     )
 
 

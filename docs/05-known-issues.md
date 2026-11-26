@@ -1,7 +1,8 @@
 # 05 — Known issues
 
 Verified on macOS with Python 3.12 on 2026-11-26 against commit `0176c5a`. Ordered by how much
-each one misleads the user. Issues 1–4, 6, 9 and 12 are fixed on `main` (not yet released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
+each one misleads the user. Issues 1–4, 6, 9, 12 and 13, and the first five low-severity items, are fixed on `main` (not yet
+released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
 **medium** = a feature silently does nothing; **low** = cosmetic or edge case.
 
 ## High
@@ -88,26 +89,29 @@ dependency, so `save_config` always used a hand-written TOML emitter that doesn'
 escape strings. Reproduce: add a blocklist entry or tracked repo containing `\` (any Windows path),
 run `coach enable`, then any command → `TOMLDecodeError`. Test: `test_config_round_trips_backslash_and_quote`.
 
-### 13. `coach help` claims a fallback it doesn't do
-On an LLM error it prints "Falling back to local mode." and exits. Nothing is shown.
+### 13. `coach help` claims a fallback it doesn't do — **fixed**
+v0.1.0 printed "Falling back to local mode." on an LLM error and showed nothing. It now prints the
+local goal summary. Test: `test_coach_help_falls_back_when_llm_fails`.
 
 ## Low
 
-- `stats` prints "Since 12:00 AM" regardless of when tracking started.
-- The dashboard footer is fixed at 7 lines, so "Top Distractions" shows about 2 of 5 rows and loses
-  its bottom border at common terminal heights (visible in `docs/images/report.svg`).
-- Running `start -d` while the launchd daemon is installed: the second tracker exits 1, and launchd
-  restarts it every 10 s (`KeepAlive` on non-zero exit).
-- The unencrypted-DB warning prints on every connection, including inside the daemon's log.
-- `privacy show` says git commit *messages* are tracked; nothing stores them.
+- **Fixed:** `stats` printed "Since 12:00 AM" regardless of when tracking started; it now shows the
+  first activity today.
+- **Fixed:** the dashboard footer was fixed at 7 lines, cutting off "Top Distractions"; it is now
+  sized to its rows.
+- **Fixed:** `start -d` with the launchd daemon installed made launchd restart the daemon's tracker
+  every 10 s. `start -d` now refuses, and a daemon-launched tracker exits 0 if one is running.
+- **Fixed:** the unencrypted-DB warning printed once per thread, including into the daemon's log. It
+  now prints once per process, and only to a terminal.
+- **Fixed:** `privacy show` said git commit *messages* are tracked; nothing stores them.
 - `terminal` is listed as a productive category, but no keyword list produces it.
 
 ## Code health
 
 | Check | Result |
 | --- | --- |
-| `pytest` | 91 passed (78 in v0.1.0) |
-| Line coverage | 40%. `commands/`, `ui/`, `integrations/`, `platform/daemon_*` are at 0% |
+| `pytest` | 95 passed (78 in v0.1.0) |
+| Line coverage | 44%. `commands/` 23–57%; `ui/dashboard.py`, `ui/report_view.py`, `git_tracker`, `github_api` and `platform/daemon_*` at 0% |
 | `ruff check src` | 94 findings (18 unused imports, 9 `raise … from` missing, 48 auto-fixable) |
 | `mypy src` (strict, as configured) | 31 errors in 12 files |
 

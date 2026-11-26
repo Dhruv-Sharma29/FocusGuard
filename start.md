@@ -72,8 +72,8 @@ focusguard daemon uninstall
 | Linux | `~/.config/systemd/user/focusguard.service` (systemd user unit) |
 | Windows | Task Scheduler task `FocusGuard`, runs at logon via `pythonw.exe` |
 
-Don't run `start -d` and the daemon together. The second tracker sees the PID file and exits, and on
-macOS launchd will keep restarting it every 10 s.
+With the daemon installed, `start -d` refuses and points you at `focusguard daemon status`. If you
+start a foreground tracker first, the daemon's copy exits cleanly instead of restarting every 10 s.
 
 ## 5. Goals
 

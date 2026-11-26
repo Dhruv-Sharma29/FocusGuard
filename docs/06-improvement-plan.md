@@ -16,9 +16,11 @@ proves it's done. Work goes in order; a phase doesn't start until the one before
 | App names go through the blocklist | 05 #6 | `test_blocklisted_app_name_is_redacted` |
 | CI on Linux, macOS, Windows × Python 3.10, 3.12 | — | First green run after the next push |
 
-## Phase 1 — every message tells the truth
+## Phase 1 — every message tells the truth ✅
 
-Small fixes where the CLI says something that isn't so.
+Small fixes where the CLI says something that isn't so. All done on `main`, each with a test except
+the footer (checked in the regenerated `docs/images/report.svg`) and the warning (checked in a
+terminal and through a pipe).
 
 | Change | Closes | Done when |
 | --- | --- | --- |
