@@ -76,7 +76,7 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | Git commit logging | **Not wired in.** `log_git_event()` is never called. | `db/queries.py` |
 
 The details, with reproductions, are in [docs/05-known-issues.md](docs/05-known-issues.md). The fix
-order is in [docs/06-roadmap.md](docs/06-roadmap.md).
+order is in [docs/06-improvement-plan.md](docs/06-improvement-plan.md).
 
 ## Run it
 
@@ -125,7 +125,7 @@ Start with [start.md](start.md) to run it. The design record is in [docs/](docs/
 | 03 | [Privacy and security](docs/03-privacy-and-security.md) | What is stored, redaction, encryption, what reaches an LLM |
 | 04 | [CLI reference](docs/04-cli-reference.md) | Every command and option, config file location and keys |
 | 05 | [Known issues](docs/05-known-issues.md) | Verified bugs and gaps, each with a reproduction |
-| 06 | [Roadmap](docs/06-roadmap.md) | Fix order, definition of done for v0.2 |
+| 06 | [Improvement plan](docs/06-improvement-plan.md) | What's done, what's next, and the check for each |
 
 ## License
 

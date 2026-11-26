@@ -16,7 +16,7 @@ afterwards. To install and run, start with [start.md](../start.md).
 | 03 | [Privacy and security](03-privacy-and-security.md) | What is stored, redaction, encryption, keyring, what reaches an LLM or GitHub |
 | 04 | [CLI reference](04-cli-reference.md) | Every command and option, config keys |
 | 05 | [Known issues](05-known-issues.md) | Verified bugs and gaps, each with a reproduction and the fix |
-| 06 | [Roadmap](06-roadmap.md) | Fix order and a definition of done for v0.2 |
+| 06 | [Improvement plan](06-improvement-plan.md) | What's done, what's next, and the check for each |
 
 ## The one-paragraph version
 
@@ -31,8 +31,8 @@ honest as the category each sample gets.
 
 ## Status
 
-v0.1.0: an initial commit plus a licence (a CI workflow exists only on the `fix/repository-review`
-branch). `main` has unreleased fixes for 05 #1–4, 6, 9 and 12. 91 tests pass on Python 3.12.
+v0.1.0 plus unreleased work on `main`: a CI workflow (Linux, macOS, Windows × Python 3.10, 3.12)
+and fixes for 05 #1–4, 6, 9 and 12. 91 tests pass on Python 3.12.
 Line coverage is about 40%; the UI renderers, integrations and daemons are not under test.
 Findings in these docs come from reading the code and running it on macOS on 2026-11-26. Windows and
 Linux paths were read, not run.
