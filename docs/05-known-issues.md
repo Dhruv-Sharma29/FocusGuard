@@ -1,0 +1,109 @@
+# 05 — Known issues
+
+Verified on macOS with Python 3.12 on 2026-11-26 against commit `0176c5a`. Ordered by how much
+each one misleads the user. Severity: **high** = numbers or privacy promises are wrong;
+**medium** = a feature silently does nothing; **low** = cosmetic or edge case.
+
+## High
+
+### 1. Classifier calls entertainment "coding"
+`core/tracker.py::_classify_app` matches keywords as substrings and checks `coding` before
+`entertainment`. Every title below was classified as productive.
+
+```bash
+python -c "
+from focusguard.core.tracker import ActivityTracker
+t = ActivityTracker()
+for title in ['How I Organized My Life - YouTube', 'Anatomy of a scandal - Netflix',
+              'Hyperpop mix - Spotify', 'Next.js drama - Twitter',
+              'lofi beats to code to - YouTube', 'Python memes - Reddit']:
+    print(title, '->', t._classify_app('Google Chrome', title))"
+```
+
+Output: 5 × `coding`, 1 × `documentation`. **Fix:** whole-word regex matching, check
+entertainment *sites* before topic keywords, and classify by app name before title. Add these
+six titles as a regression test.
+
+### 2. Idle time counts as work
+`_check_idle()` returns `False`. An unattended editor logs coding time all night if the screen
+doesn't lock. **Fix:** per-OS last-input time ([02](02-tracking-and-scoring.md#idle-detection)),
+compared with `idle_threshold`.
+
+### 3. Retention never runs; score rows grow forever
+`run_retention_policy()` has no caller, so the "auto-delete after 90 days" promise on the privacy
+screen is false. Separately, a `session` score row is written every tick and never deleted
+(~525k rows/year). **Fix:** in `_poll_tick`, when the date differs from the last tick, run
+retention, and delete `session` rows older than a day.
+
+### 4. Blocklist changes from the CLI are discarded
+`privacy blocklist add/remove` print a ✓ and return. Nothing is saved. **Fix:** append/remove in
+`config.security.blocklist` and call `save_config` (after fixing #12).
+
+### 5. `pip install focusguard` installs someone else's package
+PyPI's `focusguard` is an unrelated project (v5.1.0). The old README told users to run exactly
+that. The docs now say "install from source". **Fix:** rename the distribution (for example
+`focusguard-cli`) before publishing, or publish under a name you own.
+
+### 6. App names bypass redaction
+Only `window_title` goes through `sanitize_title`. On the Windows/Linux fallbacks,
+`_extract_app_name` builds the app name from the title. A title with no separator, like
+`Chase Online Banking`, is stored verbatim as the app name and can reach the LLM in `coach help`.
+**Fix:** sanitise `app_name` with the same function.
+
+## Medium
+
+### 7. Procrastination engine isn't connected
+`core/pattern_engine.py` is tested but never called. It also flags an hour of reading docs in a
+browser with a goal set as procrastination (0.30 + 0.35 ≥ 0.6),
+see [02](02-tracking-and-scoring.md#procrastination-engine-corepattern_enginepy-not-wired-in).
+
+### 8. Git activity is never recorded
+`queries.log_git_event()` has no caller, so `git_activity` stays empty. The dashboard's "Commits"
+is always 0, `zero_git_activity` always fires, and the week report repeats today's (zero) count on
+every row (`ui/report_view.py`, marked `TODO`). **Fix:** have the tracker scan
+`[github] tracked_repos` with `git_tracker.scan_repo` once an hour and log new SHAs.
+
+### 9. `coach mode` doesn't persist
+Prints "Switched to … mode" without calling `save_config`. The next command uses the old mode.
+
+### 10. Adding SQLCipher later breaks the existing database
+`_get_connection` always keys the DB when `sqlcipher3` is importable. A database created without
+it is plaintext, so every query fails with "file is not a database". **Fix:** detect a plaintext
+DB (header `SQLite format 3`) and offer `sqlcipher_export` migration, or refuse with instructions.
+
+### 11. Docs pointed macOS users at the wrong config path
+The config lives at `~/Library/Application Support/focusguard/config.toml` on macOS
+(`platformdirs`). The old SETUP/README said `~/.config/focusguard/`, which is ignored there.
+Fixed in these docs. `privacy show` prints the real path.
+
+### 12. Saving the config corrupts it for some values
+`tomli_w` isn't a dependency, so `save_config` always uses a hand-written TOML emitter that doesn't
+escape strings. Reproduce: add a blocklist entry or tracked repo containing `\` (any Windows path),
+run `coach enable`, then any command → `TOMLDecodeError`. **Fix:** add `tomli-w` as a dependency
+and delete the fallback.
+
+### 13. `coach help` claims a fallback it doesn't do
+On an LLM error it prints "Falling back to local mode." and exits. Nothing is shown.
+
+## Low
+
+- `stats` prints "Since 12:00 AM" regardless of when tracking started.
+- The dashboard footer is fixed at 7 lines, so "Top Distractions" shows about 2 of 5 rows and loses
+  its bottom border at common terminal heights (visible in `docs/images/report.svg`).
+- Running `start -d` while the launchd daemon is installed: the second tracker exits 1, and launchd
+  restarts it every 10 s (`KeepAlive` on non-zero exit).
+- The unencrypted-DB warning prints on every connection, including inside the daemon's log.
+- `privacy show` says git commit *messages* are tracked; nothing stores them.
+- `terminal` is listed as a productive category, but no keyword list produces it.
+
+## Code health
+
+| Check | Result |
+| --- | --- |
+| `pytest` | 78 passed |
+| Line coverage | 25%. `commands/`, `ui/`, `integrations/`, `platform/daemon_*`, `core/retention.py` are at 0% |
+| `ruff check src` | 94 findings (18 unused imports, 9 `raise … from` missing, 48 auto-fixable) |
+| `mypy src` (strict, as configured) | 31 errors in 12 files |
+
+No CLI test exists. Typer's `CliRunner` with a temp `HOME` (the same trick `scripts/screenshots.py`
+uses) would cover issues 4, 9, 12 and 13 in a few lines each.

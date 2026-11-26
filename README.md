@@ -1,304 +1,132 @@
 # FocusGuard
 
-**Privacy-first developer productivity tracker.** Runs locally. Zero telemetry. Your data never leaves your machine.
+A local-first command-line tracker for developers. It records which app is in focus once a minute,
+turns that into a 0–100 focus score, and shows the result as a terminal dashboard, with goals,
+personality-mode nudges and an optional AI coach (Ollama locally, or OpenAI).
 
-FocusGuard monitors which app is in focus, computes a focus score, and helps you stay productive — with optional AI coaching and a roast mode that'll make you close YouTube.
+> **Status:** alpha (v0.1.0). The tracker, dashboard, reports, goals, personality modes, AI coach,
+> GitHub summary and per-OS daemons work. The **procrastination engine, 90-day retention and git
+> commit logging are written and unit-tested but not yet called by the app**, idle detection is a
+> stub, and app classification has known false positives. See [Known issues](docs/05-known-issues.md)
+> before trusting a score.
 
+![FocusGuard dashboard](docs/images/report.svg)
+
+<sub>All screenshots use synthetic demo data. Regenerate them with `python scripts/screenshots.py`.</sub>
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph LOOP[Tracker loop, every poll_interval seconds]
+        direction LR
+        W[platform/window.py<br/>active app + title] --> B[security/blocklist.py<br/>redact sensitive titles]
+        B --> C[core/tracker.py<br/>classify into category]
+        C --> DB[(SQLite<br/>activity_log)]
+        DB --> S[core/scorer.py<br/>focus score snapshot]
+        S --> FS[(focus_scores)]
+    end
+    DB --> UI[ui/dashboard.py · ui/report_view.py<br/>report, stats]
+    FS --> UI
+    DB --> P[personality/<br/>template nudges]
+    P --> CO[coach nudge / roast]
+    G[goal add] --> GL[(goals)]
+    GL --> UI
+    GL --> LLM[integrations/llm.py<br/>goal + time + app names only]
+    LLM --> CO
+    KR[OS keyring<br/>DB key, tokens] -.-> DB
+    KR -.-> LLM
+    KR -.-> GH[integrations/github_api.py]
 ```
-$ focusguard stats
-  Focus: 78/100 (up)  |  Coding: 3h 42m  |  Distraction: 27m  |  Since 09:15 AM
 
-$ focusguard roast
-  Focus score: 43. You've spent more time switching tabs
-  than actually working. Your IDE filed a missing persons report.
-```
+Module map, schema and design rules: [docs/01-architecture.md](docs/01-architecture.md).
 
----
+## What it looks like
 
-## Documentation
+| Quick stats and weekly report | Goals and roast mode |
+| --- | --- |
+| ![stats](docs/images/stats.svg) ![week](docs/images/report-week.svg) | ![goals](docs/images/goals.svg) ![roast](docs/images/roast.svg) |
 
-| | |
-|---|---|
-| [**Setup Guide**](docs/SETUP.md) | Full install, daemon, AI coach, and uninstall instructions |
-| [**Architecture**](docs/ARCHITECTURE.md) | Module structure, data flow, and design decisions |
+<details>
+<summary><code>focusguard privacy show</code> and <code>focusguard --help</code></summary>
 
----
+![privacy](docs/images/privacy.svg)
+![help](docs/images/help.svg)
 
-## Features
+</details>
 
-| Feature | Description |
-|---------|-------------|
-| **Activity tracking** | Polls active window every 60s. Tracks individual tabs (e.g. "Safari: LeetCode") |
-| **Focus score** | 0–100 score with time-decay weighting (recent activity counts more) |
-| **Rich dashboard** | Full terminal UI with score, timeline, breakdown, and distractions |
-| **Background daemon** | Survives terminal close — launchd (macOS), systemd (Linux), Task Scheduler (Windows) |
-| **Goal engine** | Set goals, track time on them, get nudged after 45 min of inactivity |
-| **AI coach** | Opt-in rubber duck debugging via Ollama (local) or OpenAI (paid) |
-| **GitHub integration** | Weekly commit/PR/issue summary, local repo scanning |
-| **Smart procrastination detection** | Pattern-based, not "YouTube = bad" — avoids false positives for research |
-| **Personality modes** | Coach, Strict, Friend, Roast |
-| **Encrypted database** | SQLCipher AES-256 encryption at rest |
-| **Privacy controls** | Blocklist for sensitive sites, retention policy, full uninstall |
+## What works and what doesn't
 
----
+| Feature | State | Where |
+| --- | --- | --- |
+| Active-window polling (macOS, Windows, Linux X11) | Works. macOS needs Accessibility permission. | `platform/window.py` |
+| Sensitive-title redaction | Works on window titles. Substring match, so it over-redacts; app names are not filtered. | `security/blocklist.py` |
+| Focus score with time decay | Works. Only as good as the classifier feeding it. | `core/scorer.py` |
+| Dashboard, `stats`, week/month report | Works. The report's "Commits" column is always 0. | `ui/` |
+| Goals | Works. | `commands/goal.py` |
+| Personality modes (template messages) | Works. `coach mode X` does not save the mode yet. | `personality/` |
+| AI coach (Ollama / OpenAI) | Works when enabled. | `integrations/llm.py` |
+| GitHub summary, local repo scan | Works (`.[github]` extra). | `integrations/` |
+| Background daemon | launchd, systemd user unit and Task Scheduler. | `platform/daemon_*.py` |
+| Encrypted database | Only with the `.[encrypted]` extra. The default install is **plain SQLite**. | `db/connection.py` |
+| Idle detection | **Stub.** Always "not idle", so time away with an editor open counts as coding. | `core/tracker.py` |
+| Procrastination engine | **Not wired in.** Unit-tested, never called. | `core/pattern_engine.py` |
+| 90-day retention | **Not wired in.** `run_retention_policy()` is never called. | `core/retention.py` |
+| Git commit logging | **Not wired in.** `log_git_event()` is never called. | `db/queries.py` |
+| `privacy blocklist add/remove` | **Prints success, saves nothing.** Edit `config.toml` instead. | `commands/privacy.py` |
 
-## Installation
+The details, with reproductions, are in [docs/05-known-issues.md](docs/05-known-issues.md). The fix
+order is in [docs/06-roadmap.md](docs/06-roadmap.md).
+
+## Run it
+
+FocusGuard is **not on PyPI.** `pip install focusguard` installs an unrelated package with the same
+name. Install from source:
 
 ```bash
-pip install focusguard
+git clone https://github.com/Dhruv-Sharma29/FocusGuard.git && cd FocusGuard
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[encrypted]"        # add ai, github or dev as needed: ".[encrypted,ai,github]"
+focusguard start                     # foreground; Ctrl+C to stop
+focusguard report                    # in another terminal
 ```
 
-**With optional features:**
-```bash
-pip install focusguard[ai]       # AI coaching (Ollama + OpenAI)
-pip install focusguard[github]   # GitHub integration
-pip install focusguard[all]      # Everything
-```
+Step-by-step setup (daemon, AI coach, GitHub, config, uninstall): [start.md](start.md).
+Every command: [docs/04-cli-reference.md](docs/04-cli-reference.md).
 
-**From source:**
-```bash
-git clone https://github.com/Dhruv-Sharma29/Focusguard.git
-cd focusguard
+## Privacy in one paragraph
 
-# Create and activate virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install the app
-pip install -e .
-```
-
-**Alternative: install globally (no virtual environment needed)**
-If you want the `focusguard` command available everywhere, use `pipx`:
-```bash
-brew install pipx
-pipx ensurepath
-pipx install .
-```
-
-### Platform notes
-
-**macOS**: Accessibility permissions are required for window title tracking.
-Go to **System Settings → Privacy & Security → Accessibility** and add your terminal app.
-
-**Linux (Wayland)**: Window title access is restricted by design. FocusGuard works best on X11. On Wayland, only app names (not window titles) are tracked.
-
-**Windows**: `psutil` + process monitoring may trigger Windows Defender. This is a false positive — FocusGuard only reads the active window name, never injects into processes or captures keystrokes. See [Antivirus FAQ](#antivirus-faq) below.
-
-For full step-by-step setup, see the [Setup Guide](docs/SETUP.md).
-
----
-
-## Quick Start
-
-```bash
-# Start tracking (foreground)
-focusguard start
-
-# Start as background daemon
-focusguard start -d
-
-# See your stats
-focusguard stats
-
-# Full dashboard
-focusguard report
-
-# Set a goal
-focusguard goal add "Build authentication system"
-
-# Get roasted
-focusguard roast
-```
-
----
-
-## Commands
-
-### Core
-| Command | Description |
-|---------|-------------|
-| `focusguard start` | Start the tracker (foreground) |
-| `focusguard start -d` | Start as background daemon |
-| `focusguard stop` | Stop the tracker |
-| `focusguard stats` | Quick one-line summary |
-| `focusguard report` | Full Rich dashboard |
-| `focusguard report -p week` | Weekly summary |
-
-### Goals
-| Command | Description |
-|---------|-------------|
-| `focusguard goal add "..."` | Set a new focus goal |
-| `focusguard goal list` | List active goals |
-| `focusguard goal complete <id>` | Mark a goal as done |
-| `focusguard goal drop <id>` | Drop a goal |
-
-### AI Coach
-| Command | Description |
-|---------|-------------|
-| `focusguard coach help` | Ask the AI for help (opt-in) |
-| `focusguard coach help -b` | Break goal into subtasks |
-| `focusguard coach nudge` | Get a personality-based nudge |
-| `focusguard coach mode roast` | Switch personality mode |
-| `focusguard coach enable` | Enable AI coaching |
-| `focusguard coach disable` | Disable AI coaching |
-| `focusguard coach setup-openai` | Configure OpenAI API key |
-| `focusguard roast` | Shortcut for roast mode |
-
-### GitHub
-| Command | Description |
-|---------|-------------|
-| `focusguard github setup` | Configure GitHub token |
-| `focusguard github summary` | Weekly GitHub activity |
-| `focusguard github repos ~/Code` | Scan local repos |
-
-### Daemon
-| Command | Description |
-|---------|-------------|
-| `focusguard daemon install` | Install OS background service |
-| `focusguard daemon uninstall` | Remove background service |
-| `focusguard daemon status` | Check if daemon is running |
-
-### Privacy
-| Command | Description |
-|---------|-------------|
-| `focusguard privacy show` | See what's tracked vs not tracked |
-| `focusguard privacy blocklist` | Manage sensitive site list |
-| `focusguard privacy export-key` | Backup encryption key |
-| `focusguard privacy uninstall` | Full data removal |
-
----
-
-## Privacy & Security
-
-FocusGuard is designed to be auditable. It's open source, runs locally, and has **zero telemetry**.
-
-See [Architecture](docs/ARCHITECTURE.md) for how each security boundary is implemented in code.
-
-### What is tracked
-- Active app name (e.g., "VS Code", "Chrome")
-- Window title (**sanitized** — sensitive sites are redacted)
-- App category and duration
-- Focus score (computed locally)
-- Git commits (count and messages, from local repos)
-
-### What is NEVER tracked
-- Keystrokes or typing content
-- Clipboard contents
-- Screenshots or screen recordings
-- DMs, emails, or message content
-- Passwords or authentication tokens
-- Banking or healthcare site URLs
-- File contents or source code
-- Network traffic
-
-### Security measures
-- **Database encryption**: SQLCipher AES-256 encryption at rest
-- **Secrets in OS keyring**: GitHub tokens, API keys, and the DB encryption key are stored via `python-keyring` (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux) — never in config files
-- **Sensitive site blocklist**: Banking, healthcare, and auth sites have their window titles replaced with `[private]`
-- **Auto-deletion**: Raw activity logs older than 90 days are aggregated into daily summaries, then deleted
-- **No telemetry**: No crash reporting, no analytics, no update checks, no network requests (unless you explicitly enable AI coaching)
-
----
-
-## Smart Procrastination Detection
-
-FocusGuard doesn't use naive rules like "YouTube = bad." Instead, it reads **compound patterns**:
-
-```
-goal set + 1 hour elapsed + 0 files modified + 0 git activity + 16 browser tabs
-= procrastinating
-```
-
-This avoids false positives where reading documentation or watching a tutorial looks like distraction but isn't. The engine uses weighted signals:
-
-| Signal | Weight | Triggers when |
-|--------|--------|---------------|
-| Goal set, no progress | 0.30 | Active goal + 0 coding in last hour |
-| Excessive app switching | 0.20 | 10+ unique apps in 30 minutes |
-| Long entertainment | 0.40 | 30+ min entertainment in last hour |
-| Zero git activity | 0.10 | No commits + goal set 2+ hours ago |
-| High distraction ratio | 0.25 | Distraction > coding in last hour |
-| Known slump hour | 0.10 | Current hour is historically unproductive |
-
-Procrastination alert triggers when the weighted sum exceeds **0.6**.
-
----
-
-## Personality Modes
-
-| Mode | Command | Vibe |
-|------|---------|------|
-| **Coach** | `focusguard coach nudge` | "80% done. One more problem. You've got this." |
-| **Strict** | `focusguard coach mode strict` | "42 min YouTube. Not in today's plan." |
-| **Friend** | `focusguard coach mode friend` | "Hey, you've been at this a while. Take a break?" |
-| **Roast** | `focusguard roast` | "You opened LeetCode 7 times. Solved 1 problem. The problem wasn't LeetCode." |
-
----
-
-## Configuration
-
-Config file: `~/.config/focusguard/config.toml` (optional — all settings have defaults)
-
-```toml
-[tracker]
-poll_interval = 60        # seconds between polls
-idle_threshold = 300      # seconds before marking idle
-
-[security]
-blocklist = ["chase.com", "healthcare", "private"]
-retention_days = 90       # auto-delete raw logs older than this
-
-[personality]
-mode = "coach"            # coach, strict, friend, roast
-
-[ai]
-enabled = false
-provider = "ollama"       # ollama or openai
-ollama_model = "llama3.2:3b"  # runs on 6GB+ RAM
-```
-
-Full reference and platform-specific config paths: [Setup Guide, Part 9](docs/SETUP.md#part-9-configuration-reference).
-
----
-
-## <a name="antivirus-faq"></a>Antivirus FAQ
-
-**Q: Why does Windows Defender flag FocusGuard?**
-
-A: FocusGuard uses `psutil` to check process information and `PyWinCtl` to read window titles. These are standard Python libraries, but some antivirus software flags any process that reads window information. FocusGuard does NOT:
-- Inject code into other processes
-- Capture keystrokes or input
-- Record screen content
-- Modify system files
-- Make network requests (unless AI coaching is explicitly enabled)
-
-You can audit every line of code — it's open source.
-
----
+Everything stays on your machine unless you turn on the AI coach with the OpenAI provider or run a
+`github` command. Window titles that match the blocklist are stored as `[private]`, secrets (DB key,
+GitHub token, OpenAI key) live in the OS keyring, and there is no telemetry. Three of the
+privacy screen's own claims are not true yet: retention never runs, the database is unencrypted
+unless you install the `encrypted` extra, and blocklist edits from the CLI aren't saved. Full
+account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ## Development
 
 ```bash
-# Clone and install in dev mode
-git clone https://github.com/Dhruv-Sharma29/Focusguard.git
-cd focusguard
 pip install -e ".[dev]"
-
-# Run tests
-pytest tests/ -v
-
-# Lint
-ruff check src/
-
-# Type check
-mypy src/focusguard/
+pytest                    # 78 tests, ~25% line coverage; CLI commands and UI are untested
+ruff check src            # 94 findings today, 48 auto-fixable
+mypy src                  # strict mode: 31 errors today
+python scripts/screenshots.py   # regenerate docs/images/
 ```
 
-See [Architecture](docs/ARCHITECTURE.md) for the module map and where new features should go.
+## Docs
 
----
+Start with [start.md](start.md) to run it. The design record is in [docs/](docs/README.md):
+
+| # | Doc | What it settles |
+| --- | --- | --- |
+| 00 | [Charter](docs/00-charter.md) | Problem, who it's for, scope, how success should be measured |
+| 01 | [Architecture](docs/01-architecture.md) | Poll loop, module map, schema, design rules |
+| 02 | [Tracking and scoring](docs/02-tracking-and-scoring.md) | Classification, the score formula, the procrastination engine |
+| 03 | [Privacy and security](docs/03-privacy-and-security.md) | What is stored, redaction, encryption, what reaches an LLM |
+| 04 | [CLI reference](docs/04-cli-reference.md) | Every command and option, config file location and keys |
+| 05 | [Known issues](docs/05-known-issues.md) | Verified bugs and gaps, each with a reproduction |
+| 06 | [Roadmap](docs/06-roadmap.md) | Fix order, definition of done for v0.2 |
 
 ## License
 
-MIT — do whatever you want with it.
+MIT. See [LICENSE](LICENSE).

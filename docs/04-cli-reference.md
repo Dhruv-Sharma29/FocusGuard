@@ -1,0 +1,91 @@
+# 04 — CLI reference
+
+`focusguard --help` lists the groups; every command takes `--help`. Options are shown with their
+defaults. Behaviour notes flag where a command doesn't do what its output says.
+
+![focusguard --help](images/help.svg)
+
+## Tracking
+
+| Command | Does |
+| --- | --- |
+| `focusguard start` | Run the tracker in the foreground. Ctrl+C stops it. Refuses if a tracker is already running. |
+| `focusguard start -d` / `--daemon` | Start a detached tracker (`--daemon-mode` child) and return. Lives until logout or `stop`. |
+| `focusguard stop` | SIGTERM the tracker from the PID file, wait up to 5 s. |
+| `focusguard stats` | One line: score, trend, coding and distraction time today. ("Since" always shows 12:00 AM.) |
+| `focusguard report` | Full dashboard for today. |
+| `focusguard report -p week` · `-p month` | Per-day table for the last 7 / 30 days. Commits column repeats today's count on every row (and that count is always 0). |
+
+![focusguard report -p week](images/report-week.svg)
+
+## Goals: `focusguard goal …`
+
+| Command | Does |
+| --- | --- |
+| `add "text"` | Create an active goal; prints its id. |
+| `list` · `list -a` / `--all` | Active goals; `--all` adds done and dropped ones. |
+| `complete <id>` | Mark done (sets `completed_at`). Exit 1 if not found or already inactive. |
+| `drop <id>` | Deactivate without completing. |
+
+![focusguard goal list --all](images/goals.svg)
+
+## Coach and personality: `focusguard coach …`
+
+| Command | Does |
+| --- | --- |
+| `nudge` | Message in the configured mode: LLM if `[ai] enabled`, else a local template. |
+| `roast` (also top-level `focusguard roast`) | Same, always in roast mode. |
+| `help` · `help -b` / `--breakdown` | Ask the LLM about your newest active goal; `-b` asks for subtasks. Without AI enabled it prints your goal, time on it and recent apps. Hidden alias: `focusguard help-me`. |
+| `mode <coach\|strict\|friend\|roast>` | Prints the switch. **Doesn't save it**; set `[personality] mode` in the config. |
+| `enable` · `enable -p openai` | Set `[ai] enabled = true` and the provider (default `ollama`); rewrites the config file. |
+| `disable` | Set `[ai] enabled = false`. |
+| `setup-openai` | Prompt (hidden) for an OpenAI key and store it in the keyring. |
+
+![focusguard coach roast](images/roast.svg)
+
+Modes: **coach** (encouraging), **strict** (direct), **friend** (casual, avoids numbers),
+**roast** (savage). Each has its own colour theme in the dashboard.
+
+## GitHub: `focusguard github …` (needs `.[github]`)
+
+| Command | Does |
+| --- | --- |
+| `setup` | Prompt (hidden) for a personal access token; store it in the keyring. |
+| `summary` · `summary -d 30` | Commits, PRs opened/merged, issues opened/closed over N days (default 7), across your repos pushed in that window. Makes one or more API calls per repo, so it's slow with many repos. |
+| `repos [PATH]` | Find git repos under PATH (default `~/Code`, depth 3) and show commits in 24 h and 7 d, lines changed and a dirty flag. Local only. |
+
+## Daemon: `focusguard daemon …`
+
+| Command | Does |
+| --- | --- |
+| `install` | Write and load the launchd plist / systemd user unit / scheduled task (see [start.md § 4](../start.md#4-survive-reboots-daemon)). |
+| `uninstall` | Unload and remove it. |
+| `status` | Running or not, with PID, from the PID file. |
+
+## Privacy: `focusguard privacy …`
+
+| Command | Does |
+| --- | --- |
+| `show` | What is and isn't tracked, file paths, whether the DB is encrypted, retention setting. |
+| `blocklist` · `blocklist list` | Print the active patterns. |
+| `blocklist add <p>` · `blocklist remove <p>` | **Print success but change nothing.** Edit `[security] blocklist` in the config instead. |
+| `export-key` | Print the database encryption key, for backup. |
+| `uninstall` · `uninstall -y` | Stop the tracker, remove the daemon, delete data/config/log folders and the keyring entries. Irreversible. |
+
+![focusguard privacy show](images/privacy.svg)
+
+## Global options
+
+| Option | Does |
+| --- | --- |
+| `-v`, `--version` | Print the version. |
+| `--install-completion` / `--show-completion` | Shell completion (Typer). |
+
+## Config file
+
+Keys, defaults and per-OS paths are in [start.md § 8](../start.md#8-configuration). Two behaviours
+to know:
+
+- Setting a list or table (`blocklist`, `app_categories`) **replaces** the built-in defaults.
+- `coach enable`/`disable` rewrite the whole file. They don't escape strings, so a value containing
+  `\` or `"` makes the file unreadable afterwards ([05](05-known-issues.md) #12).
