@@ -60,9 +60,9 @@ src/focusguard/
 ## Design rules, and where the code keeps them
 
 **Rule 1: redact before persist.** The blocklist runs on the title before `log_activity`, so a
-matching title is never written, even encrypted. *Kept for titles.* The `app_name` column isn't
-filtered, and on the Windows/Linux fallback paths the app name is *derived from the title*
-(`_extract_app_name`), so a sensitive title can land in `app_name` unredacted ([05](05-known-issues.md) #6).
+matching title is never written, even encrypted. *Kept.* The app name is filtered too,
+because on the Windows/Linux fallback paths it is *derived from the title* (`_extract_app_name`).
+v0.1.0 didn't filter it ([05](05-known-issues.md) #6).
 
 **Rule 2: only `integrations/llm.py` sends activity data off the machine, and only on an explicit
 `coach` command.** *Kept.* The daemon never calls an LLM. The payload is built field by field in

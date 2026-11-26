@@ -7,7 +7,7 @@ prints. Each row says whether the claim is true in v0.1.0.
 
 | Data | Where | Notes |
 | --- | --- | --- |
-| Foreground app name | `activity_log.app_name` | Not redacted (see "Gaps"). |
+| Foreground app name | `activity_log.app_name` | Replaced by `[private]` like titles (v0.1.0 stored it unredacted). |
 | Window title | `activity_log.window_title` | Replaced by `[private]` if any blocklist pattern is a substring. |
 | Category, duration, idle flag | `activity_log` | One row per tick. |
 | Focus score snapshots | `focus_scores` | ~1,440 `session` rows a day while tracking, pruned after a day. |
@@ -27,7 +27,7 @@ browser puts in its window title), file contents, network traffic.
 | Secrets in OS keyring | **Yes** | `security/keyring_store.py` is the only caller. |
 | Telemetry: none | **Yes** | No network code runs except `coach help`/`nudge` (when AI is on), `github summary`, and the Ollama client (localhost). |
 | Auto-delete after 90 days | **Yes, since the fix** | The tracker runs `core/retention.py` on its first tick and then daily: raw rows older than `retention_days` are summarised per day, then deleted. Not enforced while the tracker isn't running. v0.1.0 never called it. |
-| `privacy blocklist add <p>` | **No** | Prints "Added", saves nothing. Edit the config file instead ([start.md § 8](../start.md#8-configuration)). |
+| `privacy blocklist add <p>` | **Yes, since the fix** | Saves to `[security] blocklist`. A running tracker picks it up on restart. v0.1.0 saved nothing. |
 
 ## Encryption at rest
 
@@ -55,19 +55,13 @@ Plus a fixed per-mode system prompt (`personality/prompts.py`). With Ollama this
 `localhost`. With OpenAI it goes to OpenAI's API under your key.
 
 The module docstring in `integrations/llm.py` says "last 3 app names". The code sends up to 5.
-App names can contain title text on Windows/Linux (next section), so on those platforms a
-redaction gap can reach the LLM.
+App names can contain title text on Windows/Linux, so they go through the blocklist too.
 
 ## Gaps, ranked
 
-1. **Blocklist edits from the CLI are dropped.** A user who "adds" their bank believes it's
-   redacted. It isn't.
-2. **`app_name` is not sanitised.** On the Windows and Linux fallback paths the app name is the
-   last segment of the title, or the whole title when it has no separator. Run `sanitize_title`
-   on the app name too.
-3. **Unencrypted by default.** Either make SQLCipher a core dependency or have `start` refuse to
+1. **Unencrypted by default.** Either make SQLCipher a core dependency or have `start` refuse to
    run unencrypted without an explicit `--allow-plaintext`.
-4. **Substring blocklist.** Over-redacts common words, and nothing redacts unlisted sensitive sites.
+2. **Substring blocklist.** Over-redacts common words, and nothing redacts unlisted sensitive sites.
    Whole-word matching fixes the first. For the second, consider an allowlist mode for titles
    (store titles only for categorised coding/docs apps).
 

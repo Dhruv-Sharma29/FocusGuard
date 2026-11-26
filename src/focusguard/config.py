@@ -6,11 +6,13 @@ Config file is optional — all defaults are baked into code.
 
 from __future__ import annotations
 
+import dataclasses
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import tomli_w
 from platformdirs import user_config_dir, user_data_dir, user_log_dir
 
 if sys.version_info >= (3, 11):
@@ -165,35 +167,7 @@ def ensure_dirs() -> None:
 
 def save_config(config: FocusGuardConfig) -> None:
     """Save the configuration object back to the TOML file."""
-    import dataclasses
-    
     ensure_dirs()
-    
-    # Use tomli_w if available, otherwise fallback to simple manual string generation
-    # Since tomllib doesn't have a write method in Python 3.11+ standard library
-    try:
-        import tomli_w
-        with open(CONFIG_FILE, "wb") as f:
-            tomli_w.dump(dataclasses.asdict(config), f)
-    except ImportError:
-        # Fallback to basic dictionary formatting if tomli_w isn't installed
-        def _to_toml(d: dict, prefix="") -> str:
-            lines = []
-            for k, v in d.items():
-                if isinstance(v, dict):
-                    lines.append(f"\n[{prefix}{k}]")
-                    lines.append(_to_toml(v, f"{prefix}{k}."))
-                elif isinstance(v, bool):
-                    lines.append(f"{k} = {'true' if v else 'false'}")
-                elif isinstance(v, list):
-                    items = ", ".join(f'"{i}"' if isinstance(i, str) else str(i) for i in v)
-                    lines.append(f"{k} = [{items}]")
-                elif isinstance(v, str):
-                    lines.append(f'{k} = "{v}"')
-                else:
-                    lines.append(f"{k} = {v}")
-            return "\n".join(lines)
-            
-        with open(CONFIG_FILE, "w") as f:
-            f.write(_to_toml(dataclasses.asdict(config)))
+    with open(CONFIG_FILE, "wb") as f:
+        tomli_w.dump(dataclasses.asdict(config), f)
     LOG_DIR.mkdir(parents=True, exist_ok=True)

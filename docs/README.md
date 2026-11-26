@@ -32,9 +32,8 @@ honest as the category each sample gets.
 ## Status
 
 v0.1.0: an initial commit plus a licence (a CI workflow exists only on the `fix/repository-review`
-branch). The `docs/readme-refresh` branch adds fixes for the classifier, idle detection and
-retention (05 #1–3). 86 unit tests pass on Python 3.12. Line coverage
-is about 29%, and none of the CLI commands, UI renderers, integrations or daemons are under test.
+branch). `main` has unreleased fixes for 05 #1–4, 6, 9 and 12. 91 tests pass on Python 3.12.
+Line coverage is about 40%; the UI renderers, integrations and daemons are not under test.
 Findings in these docs come from reading the code and running it on macOS on 2026-11-26. Windows and
 Linux paths were read, not run.
 

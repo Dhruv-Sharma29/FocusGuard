@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from focusguard.config import load_config, DB_FILE, CONFIG_DIR, DATA_DIR, LOG_DIR
+from focusguard.config import CONFIG_DIR, DATA_DIR, DB_FILE, LOG_DIR, load_config, save_config
 from focusguard.ui.themes import get_theme
 
 console = Console()
@@ -119,18 +119,29 @@ def manage_blocklist(
             console.print("  [red]✗ Specify a pattern to add.[/red]")
             console.print("  [dim]Example: focusguard privacy blocklist add mybank.com[/dim]")
             raise typer.Exit(1)
+        if pattern in config.security.blocklist:
+            console.print(f"  [dim]'{pattern}' is already in the blocklist.[/dim]")
+            return
+        config.security.blocklist.append(pattern)
+        save_config(config)
         console.print(f"  [green]✓[/green] Added '{pattern}' to blocklist.")
-        console.print(f"  [dim]Note: Add it to ~/.config/focusguard/config.toml to persist.[/dim]")
+        console.print("  [dim]Restart a running tracker to apply it.[/dim]")
 
     elif action == "remove":
         if not pattern:
             console.print("  [red]✗ Specify a pattern to remove.[/red]")
             raise typer.Exit(1)
+        if pattern not in config.security.blocklist:
+            console.print(f"  [red]✗ '{pattern}' is not in the blocklist.[/red]")
+            raise typer.Exit(1)
+        config.security.blocklist.remove(pattern)
+        save_config(config)
         console.print(f"  [green]✓[/green] Removed '{pattern}' from blocklist.")
 
     else:
         console.print(f"  [red]✗ Unknown action: {action}[/red]")
         console.print("  [dim]Valid actions: list, add, remove[/dim]")
+        raise typer.Exit(1)
 
 
 @privacy_app.command("export-key")

@@ -60,12 +60,12 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | Feature | State | Where |
 | --- | --- | --- |
 | Active-window polling (macOS, Windows, Linux X11) | Works. macOS needs Accessibility permission. | `platform/window.py` |
-| Sensitive-title redaction | Works on window titles. Substring match, so it over-redacts; app names are not filtered. | `security/blocklist.py` |
+| Sensitive-title redaction | Works on window titles and app names. Substring match, so it over-redacts. | `security/blocklist.py` |
 | App classification | Whole-word keywords; app name first, then title for browsers. Keyword-based, so not exact. | `core/tracker.py` |
 | Focus score with time decay | Works. Only as good as the classifier feeding it. | `core/scorer.py` |
 | Dashboard, `stats`, week/month report | Works. The report's "Commits" column is always 0. | `ui/` |
 | Goals | Works. | `commands/goal.py` |
-| Personality modes (template messages) | Works. `coach mode X` does not save the mode yet. | `personality/` |
+| Personality modes (template messages) | Works. | `personality/` |
 | AI coach (Ollama / OpenAI) | Works when enabled. | `integrations/llm.py` |
 | GitHub summary, local repo scan | Works (`.[github]` extra). | `integrations/` |
 | Background daemon | launchd, systemd user unit and Task Scheduler. | `platform/daemon_*.py` |
@@ -74,7 +74,6 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | Procrastination engine | **Not wired in.** Unit-tested, never called. | `core/pattern_engine.py` |
 | 90-day retention | Works while the tracker runs: checked once a day, old rows summarised then deleted. | `core/retention.py` |
 | Git commit logging | **Not wired in.** `log_git_event()` is never called. | `db/queries.py` |
-| `privacy blocklist add/remove` | **Prints success, saves nothing.** Edit `config.toml` instead. | `commands/privacy.py` |
 
 The details, with reproductions, are in [docs/05-known-issues.md](docs/05-known-issues.md). The fix
 order is in [docs/06-roadmap.md](docs/06-roadmap.md).
@@ -99,16 +98,16 @@ Every command: [docs/04-cli-reference.md](docs/04-cli-reference.md).
 
 Everything stays on your machine unless you turn on the AI coach with the OpenAI provider or run a
 `github` command. Window titles that match the blocklist are stored as `[private]`, secrets (DB key,
-GitHub token, OpenAI key) live in the OS keyring, and there is no telemetry. Two of the
-privacy screen's own claims are not true yet: the database is unencrypted unless you install the
-`encrypted` extra, and blocklist edits from the CLI aren't saved. Full
+GitHub token, OpenAI key) live in the OS keyring, and there is no telemetry. One of the
+privacy screen's own claims needs a caveat: the database is unencrypted unless you install the
+`encrypted` extra. Full
 account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-pytest                    # 86 tests, ~29% line coverage; CLI commands and UI are untested
+pytest                    # 91 tests, ~40% line coverage; UI and most CLI commands untested
 ruff check src            # 94 findings today, 48 auto-fixable
 mypy src                  # strict mode: 31 errors today
 python scripts/screenshots.py   # regenerate docs/images/

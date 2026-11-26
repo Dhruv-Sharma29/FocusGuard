@@ -9,7 +9,7 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 
-from focusguard.config import load_config
+from focusguard.config import load_config, save_config
 from focusguard.db import queries
 from focusguard.db.models import init_db
 from focusguard.personality.modes import generate_nudge_message, get_personality
@@ -42,8 +42,6 @@ def enable_ai(
     ] = "ollama",
 ) -> None:
     """Enable AI coaching."""
-    from focusguard.config import save_config
-    
     config = load_config()
     config.ai.enabled = True
     config.ai.provider = provider
@@ -61,8 +59,6 @@ def enable_ai(
 @coach_app.command("disable")
 def disable_ai() -> None:
     """Disable AI coaching (fallback to local templates)."""
-    from focusguard.config import save_config
-    
     config = load_config()
     config.ai.enabled = False
     save_config(config)
@@ -91,6 +87,10 @@ def set_mode(
         console.print(f"  [red]✗[/red] Unknown mode: {mode}")
         console.print(f"  [dim]Valid modes: {', '.join(valid)}[/dim]")
         raise typer.Exit(1)
+
+    config = load_config()
+    config.personality.mode = mode
+    save_config(config)
 
     personality = get_personality(mode)
     console.print(f"\n  {personality.emoji} Switched to [bold]{personality.name}[/bold] mode")

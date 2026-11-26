@@ -140,8 +140,9 @@ class ActivityTracker:
         category = self._classify_app(window.app_name, sanitized_title)
 
         # Log to database
+        # The app name is redacted too: on the Windows/Linux fallbacks it is cut from the title.
         log_activity(
-            app_name=window.app_name,
+            app_name=sanitize_title(window.app_name, self._blocklist) or "Unknown",
             window_title=sanitized_title,
             category=category,
             duration_seconds=self._poll_interval,

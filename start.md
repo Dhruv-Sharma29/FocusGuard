@@ -96,7 +96,7 @@ focusguard roast                # always roast mode
 ```
 
 To change the default mode, set `[personality] mode` in the config file (step 8).
-`focusguard coach mode <name>` prints a confirmation but does **not** save the change yet.
+`focusguard coach mode <name>` does the same from the command line.
 
 ### Ollama (local, nothing leaves the machine)
 
@@ -172,7 +172,7 @@ openai_model = "gpt-4o-mini"
 coding = ["code", "pycharm", "terminal", "iterm", "xcode", "cursor"]
 ```
 
-`coach enable` and `coach disable` rewrite the whole file with every current value filled in.
+`coach enable`, `coach disable`, `coach mode` and `privacy blocklist add/remove` rewrite the whole file with every current value filled in.
 
 ## 9. Uninstall
 

@@ -36,7 +36,7 @@ defaults. Behaviour notes flag where a command doesn't do what its output says.
 | `nudge` | Message in the configured mode: LLM if `[ai] enabled`, else a local template. |
 | `roast` (also top-level `focusguard roast`) | Same, always in roast mode. |
 | `help` · `help -b` / `--breakdown` | Ask the LLM about your newest active goal; `-b` asks for subtasks. Without AI enabled it prints your goal, time on it and recent apps. Hidden alias: `focusguard help-me`. |
-| `mode <coach\|strict\|friend\|roast>` | Prints the switch. **Doesn't save it**; set `[personality] mode` in the config. |
+| `mode <coach\|strict\|friend\|roast>` | Switch and save `[personality] mode`. |
 | `enable` · `enable -p openai` | Set `[ai] enabled = true` and the provider (default `ollama`); rewrites the config file. |
 | `disable` | Set `[ai] enabled = false`. |
 | `setup-openai` | Prompt (hidden) for an OpenAI key and store it in the keyring. |
@@ -68,7 +68,7 @@ Modes: **coach** (encouraging), **strict** (direct), **friend** (casual, avoids 
 | --- | --- |
 | `show` | What is and isn't tracked, file paths, whether the DB is encrypted, retention setting. |
 | `blocklist` · `blocklist list` | Print the active patterns. |
-| `blocklist add <p>` · `blocklist remove <p>` | **Print success but change nothing.** Edit `[security] blocklist` in the config instead. |
+| `blocklist add <p>` · `blocklist remove <p>` | Add or remove a pattern and save the config. `remove` exits 1 if the pattern isn't there. Restart a running tracker to apply. |
 | `export-key` | Print the database encryption key, for backup. |
 | `uninstall` · `uninstall -y` | Stop the tracker, remove the daemon, delete data/config/log folders and the keyring entries. Irreversible. |
 
@@ -87,5 +87,5 @@ Keys, defaults and per-OS paths are in [start.md § 8](../start.md#8-configurati
 to know:
 
 - Setting a list or table (`blocklist`, `app_categories`) **replaces** the built-in defaults.
-- `coach enable`/`disable` rewrite the whole file. They don't escape strings, so a value containing
-  `\` or `"` makes the file unreadable afterwards ([05](05-known-issues.md) #12).
+- `coach enable`/`disable`/`mode` and `privacy blocklist add/remove` rewrite the whole file with
+  every current value filled in, so comments in it are lost.

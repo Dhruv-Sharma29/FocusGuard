@@ -1,8 +1,7 @@
 # 05 — Known issues
 
 Verified on macOS with Python 3.12 on 2026-11-26 against commit `0176c5a`. Ordered by how much
-each one misleads the user. Issues 1–3 are fixed on the `docs/readme-refresh` branch (not yet
-released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
+each one misleads the user. Issues 1–4, 6, 9 and 12 are fixed on `main` (not yet released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
 **medium** = a feature silently does nothing; **low** = cosmetic or edge case.
 
 ## High
@@ -41,20 +40,21 @@ second bug, also fixed: retention compared stored timestamps (`YYYY-MM-DD HH:MM:
 `isoformat()` strings (`T` separator), so daily summaries never found their scores or commits and a
 partly-summarised cutoff day could later be overwritten. Test: `tests/test_db.py::test_retention_summarises_and_prunes`.
 
-### 4. Blocklist changes from the CLI are discarded
-`privacy blocklist add/remove` print a ✓ and return. Nothing is saved. **Fix:** append/remove in
-`config.security.blocklist` and call `save_config` (after fixing #12).
+### 4. Blocklist changes from the CLI are discarded — **fixed**
+In v0.1.0 `privacy blocklist add/remove` printed a ✓ and saved nothing. They now update
+`[security] blocklist` and save the config; `remove` of an unknown pattern exits 1. Test:
+`tests/test_cli.py`.
 
 ### 5. `pip install focusguard` installs someone else's package
 PyPI's `focusguard` is an unrelated project (v5.1.0). The old README told users to run exactly
 that. The docs now say "install from source". **Fix:** rename the distribution (for example
 `focusguard-cli`) before publishing, or publish under a name you own.
 
-### 6. App names bypass redaction
-Only `window_title` goes through `sanitize_title`. On the Windows/Linux fallbacks,
+### 6. App names bypass redaction — **fixed**
+In v0.1.0 only `window_title` went through `sanitize_title`; now `app_name` does too. On the Windows/Linux fallbacks,
 `_extract_app_name` builds the app name from the title. A title with no separator, like
 `Chase Online Banking`, is stored verbatim as the app name and can reach the LLM in `coach help`.
-**Fix:** sanitise `app_name` with the same function.
+Test: `test_blocklisted_app_name_is_redacted`.
 
 ## Medium
 
@@ -69,8 +69,8 @@ is always 0, `zero_git_activity` always fires, and the week report repeats today
 every row (`ui/report_view.py`, marked `TODO`). **Fix:** have the tracker scan
 `[github] tracked_repos` with `git_tracker.scan_repo` once an hour and log new SHAs.
 
-### 9. `coach mode` doesn't persist
-Prints "Switched to … mode" without calling `save_config`. The next command uses the old mode.
+### 9. `coach mode` doesn't persist — **fixed**
+v0.1.0 printed "Switched to … mode" without saving. It now writes `[personality] mode`.
 
 ### 10. Adding SQLCipher later breaks the existing database
 `_get_connection` always keys the DB when `sqlcipher3` is importable. A database created without
@@ -82,11 +82,11 @@ The config lives at `~/Library/Application Support/focusguard/config.toml` on ma
 (`platformdirs`). The old SETUP/README said `~/.config/focusguard/`, which is ignored there.
 Fixed in these docs. `privacy show` prints the real path.
 
-### 12. Saving the config corrupts it for some values
-`tomli_w` isn't a dependency, so `save_config` always uses a hand-written TOML emitter that doesn't
+### 12. Saving the config corrupts it for some values — **fixed**
+`tomli-w` is now a dependency and the hand-written writer is gone. In v0.1.0 `tomli_w` wasn't a
+dependency, so `save_config` always used a hand-written TOML emitter that doesn't
 escape strings. Reproduce: add a blocklist entry or tracked repo containing `\` (any Windows path),
-run `coach enable`, then any command → `TOMLDecodeError`. **Fix:** add `tomli-w` as a dependency
-and delete the fallback.
+run `coach enable`, then any command → `TOMLDecodeError`. Test: `test_config_round_trips_backslash_and_quote`.
 
 ### 13. `coach help` claims a fallback it doesn't do
 On an LLM error it prints "Falling back to local mode." and exits. Nothing is shown.
@@ -106,10 +106,10 @@ On an LLM error it prints "Falling back to local mode." and exits. Nothing is sh
 
 | Check | Result |
 | --- | --- |
-| `pytest` | 86 passed (78 in v0.1.0) |
-| Line coverage | 29%. `commands/`, `ui/`, `integrations/`, `platform/daemon_*` are at 0% |
+| `pytest` | 91 passed (78 in v0.1.0) |
+| Line coverage | 40%. `commands/`, `ui/`, `integrations/`, `platform/daemon_*` are at 0% |
 | `ruff check src` | 94 findings (18 unused imports, 9 `raise … from` missing, 48 auto-fixable) |
 | `mypy src` (strict, as configured) | 31 errors in 12 files |
 
-No CLI test exists. Typer's `CliRunner` with a temp `HOME` (the same trick `scripts/screenshots.py`
-uses) would cover issues 4, 9, 12 and 13 in a few lines each.
+`tests/test_cli.py` runs real commands with Typer's `CliRunner` against a temp config file.
+Issue 13 and the remaining commands still have no test.

@@ -121,3 +121,23 @@ class TestIdleAndRetention:
             self.tracker._poll_tick()
             self.tracker._poll_tick()
         assert retention.call_count == 1
+
+
+def test_blocklisted_app_name_is_redacted():
+    """On Windows/Linux the app name is cut from the title, so it must be redacted too."""
+    from focusguard.config import FocusGuardConfig
+    from focusguard.platform.window import WindowInfo
+
+    config = FocusGuardConfig()
+    with patch("focusguard.core.tracker.load_config", return_value=config):
+        tracker = ActivityTracker()
+    window = WindowInfo("Chase Online Banking", "Chase Online Banking")
+    with (
+        patch("focusguard.core.tracker.get_active_window", return_value=window),
+        patch("focusguard.core.tracker.get_idle_seconds", return_value=0),
+        patch("focusguard.core.tracker.run_retention_policy", return_value={}),
+        patch("focusguard.core.tracker.log_activity") as log,
+    ):
+        tracker._poll_tick()
+    assert log.call_args.kwargs["app_name"] == "[private]"
+    assert log.call_args.kwargs["window_title"] == "[private]"
