@@ -14,7 +14,7 @@ defaults. Behaviour notes flag where a command doesn't do what its output says.
 | `focusguard stop` | SIGTERM the tracker from the PID file, wait up to 5 s. |
 | `focusguard stats` | One line: score, trend, coding and distraction time today, since the first activity today. |
 | `focusguard report` | Full dashboard for today. |
-| `focusguard report -p week` · `-p month` | Per-day table for the last 7 / 30 days. Commits column repeats today's count on every row (and that count is always 0). |
+| `focusguard report -p week` · `-p month` | Per-day table for the last 7 / 30 days, including commits per day (from `[github] tracked_repos`) and your rating. |
 
 ![focusguard report -p week](images/report-week.svg)
 

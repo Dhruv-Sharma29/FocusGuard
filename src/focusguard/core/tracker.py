@@ -20,6 +20,7 @@ import re
 import signal
 import threading
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 import psutil
 from rich.console import Console
@@ -28,7 +29,8 @@ from focusguard.config import DATA_DIR, PID_FILE, load_config
 from focusguard.core.retention import run_retention_policy
 from focusguard.core.scorer import snapshot_score
 from focusguard.db.models import init_db
-from focusguard.db.queries import log_activity
+from focusguard.db.queries import log_activity, log_commit
+from focusguard.integrations.git_tracker import own_commits_since
 from focusguard.platform.idle import get_idle_seconds
 from focusguard.platform.window import get_active_window
 from focusguard.security.blocklist import sanitize_title
@@ -74,6 +76,8 @@ class ActivityTracker:
         self._blocklist = self._config.security.blocklist
         self._idle_threshold = self._config.tracker.idle_threshold
         self._last_retention_day: date | None = None
+        self._repos = self._config.github.tracked_repos
+        self._last_commit_scan: datetime | None = None
         categories = self._config.tracker.app_categories
         order = [c for c in _PRIORITY if c in categories]
         order += [c for c in categories if c not in _PRIORITY]
@@ -163,10 +167,28 @@ class ActivityTracker:
             self._last_retention_day = now.date()
             logger.info(f"Retention: {run_retention_policy()}")
 
+        # First tick, then hourly: log new commits from [github] tracked_repos.
+        if self._repos and (
+            self._last_commit_scan is None or now - self._last_commit_scan >= timedelta(hours=1)
+        ):
+            self._last_commit_scan = now
+            self._log_commits(now - timedelta(days=7))
+
         logger.debug(
             f"Tick: {window.app_name} [{category}]"
             f" {'(idle)' if is_idle else ''}"
         )
+
+    def _log_commits(self, since: datetime) -> int:
+        """Log your commits since `since` in every tracked repo. Already-logged SHAs are skipped."""
+        new = 0
+        for repo in self._repos:
+            name = Path(repo).expanduser().name
+            for sha, when in own_commits_since(repo, since):
+                new += log_commit(name, sha, when)
+        if new:
+            logger.info(f"Logged {new} new commits")
+        return new
 
     def _classify_app(self, app_name: str, title: str | None) -> str:
         """Classify an application into a productivity category.

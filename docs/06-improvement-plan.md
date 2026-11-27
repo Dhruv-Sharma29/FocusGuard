@@ -83,7 +83,7 @@ two ρ values as noise.
 
 | Change | Depends on | Done when |
 | --- | --- | --- |
-| Log commits from `[github] tracked_repos` hourly | — | Dashboard "Commits" and the week table show real per-day counts |
+| ✅ Log commits from `[github] tracked_repos` hourly | — | Dashboard "Commits" and the week table show real per-day counts |
 | Wire the procrastination engine into `report`, with the signals that fired | Phases 4–5 | On 10 hand-labelled day-profiles it agrees with the labels in ≥ 8 |
 | Re-weight so browser research with a goal isn't flagged | the day-profiles | The "reading docs" profile scores < 0.6 |
 

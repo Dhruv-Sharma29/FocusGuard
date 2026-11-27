@@ -8,11 +8,49 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-C", str(repo), *args],
+        capture_output=True, text=True, timeout=15, check=True,
+    ).stdout
+
+
+def own_commits_since(repo_path: str, since: datetime) -> list[tuple[str, datetime]]:
+    """(sha, commit time) for your commits on any branch since `since`, oldest first.
+
+    "Yours" means authored by the repo's `git config user.email` (all commits if it's
+    unset). Uses the git binary, so it needs no extra package. Returns [] if the path
+    isn't a repo or git isn't installed.
+    """
+    repo = Path(repo_path).expanduser()
+    try:
+        email = _git(repo, "config", "user.email").strip()
+    except subprocess.CalledProcessError:
+        email = ""  # unset: count every author
+    except (OSError, subprocess.SubprocessError) as e:
+        logger.debug(f"git unavailable for {repo}: {e}")
+        return []
+    args = ["log", "--all", "--reverse", f"--since=@{int(since.timestamp())}", "--format=%H %ct"]
+    if email:
+        args.append(f"--author={email}")
+    try:
+        out = _git(repo, *args)
+    except (OSError, subprocess.SubprocessError) as e:
+        logger.debug(f"git log failed for {repo}: {e}")
+        return []
+    commits = []
+    for line in out.splitlines():
+        sha, _, ts = line.partition(" ")
+        commits.append((sha, datetime.fromtimestamp(int(ts))))
+    return commits
 
 
 @dataclass

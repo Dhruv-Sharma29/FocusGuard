@@ -62,7 +62,7 @@ def render_period_report(days: int = 7) -> None:
         coding = queries.get_coding_minutes(day_start, day_end)
         distraction = queries.get_distraction_minutes(day_start, day_end)
         total = queries.get_total_active_minutes(day_start, day_end)
-        commits = queries.get_git_commits_today()  # TODO: parameterize by date
+        commits = queries.get_commit_count(day_start, day_end)
 
         total_coding += coding
         total_distraction += distraction

@@ -1,8 +1,8 @@
 # 05 — Known issues
 
 Verified on macOS with Python 3.12 on 2026-11-26 against commit `0176c5a`. Ordered by how much
-each one misleads the user. Issues 1–4, 6, 9, 10, 12 and 13, and the first five low-severity items, are fixed on `main` (not
-yet released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
+each one misleads the user. Issues 1–4, 6, 8, 9, 10, 12 and 13, and the first five low-severity items, are fixed on `main`
+(not yet released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
 **medium** = a feature silently does nothing; **low** = cosmetic or edge case.
 
 ## High
@@ -64,11 +64,12 @@ Test: `test_blocklisted_app_name_is_redacted`.
 browser with a goal set as procrastination (0.30 + 0.35 ≥ 0.6),
 see [02](02-tracking-and-scoring.md#procrastination-engine-corepattern_enginepy-not-wired-in).
 
-### 8. Git activity is never recorded
-`queries.log_git_event()` has no caller, so `git_activity` stays empty. The dashboard's "Commits"
-is always 0, `zero_git_activity` always fires, and the week report repeats today's (zero) count on
-every row (`ui/report_view.py`, marked `TODO`). **Fix:** have the tracker scan
-`[github] tracked_repos` with `git_tracker.scan_repo` once an hour and log new SHAs.
+### 8. Git activity is never recorded — **fixed**
+In v0.1.0 nothing wrote `git_activity`, so "Commits" was always 0, `zero_git_activity` always fired,
+and the week report repeated today's count on every row. Now the tracker reads your commits from
+`[github] tracked_repos` with `git log --all --author=<user.email>` (no extra package) on its first
+tick and then hourly, logs each SHA once at its commit time, and the week report counts per day.
+Only repo name, SHA and time are stored. Tests: `tests/test_git_commits.py` (a real temp repo).
 
 ### 9. `coach mode` doesn't persist — **fixed**
 v0.1.0 printed "Switched to … mode" without saving. It now writes `[personality] mode`.
@@ -112,7 +113,7 @@ local goal summary. Test: `test_coach_help_falls_back_when_llm_fails`.
 
 | Check | Result |
 | --- | --- |
-| `pytest` | 160 passed, 1 skipped without SQLCipher (78 in v0.1.0) |
+| `pytest` | 163 passed, 1 skipped without SQLCipher (78 in v0.1.0) |
 | Line coverage | 75% (25% in v0.1.0). `commands/` 89%. Lowest: `platform/daemon_*` 0%, `llm.py` 21%, `github_api.py` 26%, `idle.py` 28%, `window.py` 32% (OS and network code, mocked at the command level) |
 | `ruff check src tests` | Clean, enforced in CI (94 findings in v0.1.0). `RUF001`–`003` are ignored: the en dashes and × are deliberate |
 | `mypy src` (strict, `platform = "linux"`) | Clean, enforced in CI (31 errors in v0.1.0) |

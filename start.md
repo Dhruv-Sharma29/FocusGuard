@@ -131,10 +131,23 @@ What the prompt contains: your goal text, how long the goal has been open, your 
 up to five recent app names. No window titles. See
 [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md#what-reaches-an-llm).
 
-## 7. GitHub (optional)
+## 7. Commits and GitHub (optional)
+
+To count your commits on the dashboard and in the week report, list the repos in the config
+(step 8). This needs only the `git` command, no extra package:
+
+```toml
+[github]
+tracked_repos = ["~/Code/FocusGuard", "~/Code/thesis"]
+```
+
+The tracker reads them on start and then hourly, counting commits authored with each repo's
+`git config user.email` on any branch, and stores only repo name, SHA and time.
+
+For the GitHub API summary and the local repo scan:
 
 ```bash
-pip install -e ".[encrypted,github]"
+pip install -e ".[github]"
 focusguard github setup         # paste a PAT; stored in the OS keyring
 focusguard github summary -d 7  # commits, PRs, issues across your repos
 focusguard github repos ~/Code  # scan local repos (default path ~/Code)

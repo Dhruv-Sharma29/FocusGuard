@@ -394,15 +394,34 @@ def log_git_event(
     return cursor.lastrowid or 0
 
 
-def get_git_commits_today() -> int:
-    """Count git commits logged today."""
-    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+def log_commit(repo_name: str, sha: str, when: datetime) -> bool:
+    """Record one commit at its commit time. Returns False if this SHA is already logged."""
+    details = json.dumps({"sha": sha})
+    cursor = execute(
+        """INSERT INTO git_activity (timestamp, repo_name, event_type, details)
+           SELECT ?, ?, 'commit', ?
+           WHERE NOT EXISTS (
+               SELECT 1 FROM git_activity WHERE event_type = 'commit' AND details = ?
+           )""",
+        (_ts(when), repo_name, details, details),
+    )
+    return cursor.rowcount == 1
+
+
+def get_commit_count(start: datetime, end: datetime) -> int:
+    """Commits logged with a commit time between start and end (inclusive)."""
     row = query_one(
         """SELECT COUNT(*) as count FROM git_activity
-           WHERE timestamp >= ? AND event_type = 'commit'""",
-        (_ts(today_start),),
+           WHERE timestamp BETWEEN ? AND ? AND event_type = 'commit'""",
+        (_ts(start), _ts(end)),
     )
     return int(row["count"]) if row else 0
+
+
+def get_git_commits_today() -> int:
+    """Count git commits made today."""
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    return get_commit_count(today_start, datetime.now())
 
 
 def get_recent_git_activity(n: int = 10) -> list[dict[str, Any]]:

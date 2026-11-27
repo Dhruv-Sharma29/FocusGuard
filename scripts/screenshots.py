@@ -86,6 +86,10 @@ def seed() -> None:
             ((now - timedelta(hours=h)).strftime("%Y-%m-%d %H:%M:%S"), 55 + 3 * (8 - h)),
         )
 
+    for back, n in [(0, 3), (1, 5), (2, 2), (3, 4), (5, 1)]:  # synthetic commits
+        for i in range(n):
+            when = (now - timedelta(days=back)).replace(hour=10 + i)
+            queries.log_commit("FocusGuard", f"demo{back}{i}", when)
     for back, rating in [(1, 4), (2, 3), (3, 4), (5, 2)]:
         queries.save_rating((datetime.now() - timedelta(days=back)).date(), rating)
     queries.add_goal("Ship the weekly report view")

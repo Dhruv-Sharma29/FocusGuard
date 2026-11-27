@@ -5,8 +5,8 @@ turns that into a 0–100 focus score, and shows the result as a terminal dashbo
 personality-mode nudges and an optional AI coach (Ollama locally, or OpenAI).
 
 > **Status:** alpha (v0.1.0). The tracker, dashboard, reports, goals, personality modes, AI coach,
-> GitHub summary, per-OS daemons, idle detection and 90-day retention work. The **procrastination
-> engine and git commit logging are written and unit-tested but not yet called by the app**, and
+> GitHub summary, per-OS daemons, idle detection, 90-day retention and commit counting work. The
+> **procrastination engine is written and unit-tested but not yet called by the app**, and
 > classification is keyword-based, so some titles will land in the wrong category. See
 > [Known issues](docs/05-known-issues.md) before trusting a score.
 
@@ -63,7 +63,7 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | Sensitive-title redaction | Works on window titles and app names. Substring match, so it over-redacts. | `security/blocklist.py` |
 | App classification | Whole-word keywords; app name first, then title for browsers. Keyword-based, so not exact. | `core/tracker.py` |
 | Focus score with time decay | Works. Only as good as the classifier feeding it. | `core/scorer.py` |
-| Dashboard, `stats`, week/month report | Works. The report's "Commits" column is always 0. | `ui/` |
+| Dashboard, `stats`, week/month report | Works. "Commits" counts your commits in `[github] tracked_repos`. | `ui/` |
 | Goals | Works. | `commands/goal.py` |
 | Daily rating and self-evaluation | `rate 1-5`, `eval titles/classifier/score/idle`. Tools only: no measurements yet. | `commands/evaluate.py` |
 | Personality modes (template messages) | Works. | `personality/` |
@@ -74,7 +74,7 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | Idle detection | Works on macOS (checked). Windows and X11 (`xprintidle`) written, not yet run; none on Wayland. | `platform/idle.py` |
 | Procrastination engine | **Not wired in.** Unit-tested, never called. | `core/pattern_engine.py` |
 | 90-day retention | Works while the tracker runs: checked once a day, old rows summarised then deleted. | `core/retention.py` |
-| Git commit logging | **Not wired in.** `log_git_event()` is never called. | `db/queries.py` |
+| Git commit logging | Works: tracker reads `git log` hourly for `tracked_repos`; SHA and time only. | `core/tracker.py` |
 
 The details, with reproductions, are in [docs/05-known-issues.md](docs/05-known-issues.md). The fix
 order is in [docs/06-improvement-plan.md](docs/06-improvement-plan.md).
@@ -108,7 +108,7 @@ account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ```bash
 pip install -e ".[dev]"
-pytest                    # 161 tests, ~75% line coverage; every command has a smoke test
+pytest                    # 164 tests, ~75% line coverage; every command has a smoke test
 ruff check src tests      # clean; enforced in CI
 mypy src                  # strict, clean; enforced in CI
 python scripts/screenshots.py   # regenerate docs/images/

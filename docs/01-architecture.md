@@ -54,7 +54,7 @@ src/focusguard/
 | `activity_log` | tracker, every tick | scorer, UI, coach | One row per tick. `timestamp` is local time as `YYYY-MM-DD HH:MM:SS`; `queries._ts()` formats every bound parameter the same way so string comparison works. |
 | `focus_scores` | tracker: `session` every tick, `hourly` every hour | trend arrow, slump-hour learning | ~1,440 `session` rows/day while tracking; retention deletes those older than a day, and `hourly` rows after 30 days. |
 | `goals` | `goal` commands | dashboard, coach | Newest active goal is "the" goal. |
-| `git_activity` | **nothing** | dashboard "Commits", pattern engine, retention | `log_git_event()` has no caller, so this table stays empty. |
+| `git_activity` | tracker: first tick, then hourly, from `[github] tracked_repos` | dashboard "Commits", week report, pattern engine, retention | One row per SHA (deduplicated), timestamped with the commit time. |
 | `daily_summaries` | `retention.py`, for days past `retention_days` | nothing | Written, but no report reads them yet. |
 | `ratings` (v2) | `focusguard rate` | `report -p week`, `eval score` | One 1–5 rating per date. |
 | `schema_version` | `init_db` | `init_db` | Version 2. `models.MIGRATIONS[i]` upgrades version i to i+1, each step in one transaction with its version bump; a newer database is refused. |
