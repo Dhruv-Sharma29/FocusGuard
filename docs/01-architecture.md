@@ -87,7 +87,9 @@ recent-app context itself, so `nudge` and `help` duplicate gathering logic that 
 - `start -d` re-launches `python -m focusguard start --daemon-mode` detached
   (`start_new_session=True` on Unix, `DETACHED_PROCESS` on Windows). The child writes
   `focusguard.pid` in the data dir.
-- `daemon install` registers the same `--daemon-mode` command with launchd/systemd/Task Scheduler.
+- `daemon install` registers the same `--daemon-mode` command with launchd/systemd/Task Scheduler,
+  plus `--allow-plaintext` if it was given. A service-launched tracker that refuses (unencrypted, or
+  another tracker running) exits 0, so the service manager doesn't restart it in a loop.
 - `stop` reads the PID file and sends SIGTERM (Unix) or `terminate()` (Windows), then waits 5 s.
 - One SQLite connection per thread, WAL mode, so `report` can read while the tracker writes.
 

@@ -21,6 +21,10 @@ def start(
         typer.Option("--daemon-mode", hidden=True,
                      help="Internal flag: indicates process was launched by the daemon manager."),
     ] = False,
+    allow_plaintext: Annotated[
+        bool,
+        typer.Option("--allow-plaintext", help="Track even though the database isn't encrypted."),
+    ] = False,
 ) -> None:
     """Start tracking your productivity.
 
@@ -52,6 +56,9 @@ def start(
         )
         raise typer.Exit(1)
 
+    # A service-launched tracker exits 0 so launchd/systemd don't restart it every 10 s.
+    require_encryption(allow_plaintext, exit_code=0 if daemon_mode else 1)
+
     # Check macOS permissions
     if sys.platform == "darwin":
         from focusguard.platform.window import check_accessibility_permissions
@@ -75,19 +82,37 @@ def start(
             console.print("[yellow]⚠ The daemon is installed and runs the tracker.[/yellow]")
             console.print("[dim]Check it with 'focusguard daemon status'.[/dim]")
             raise typer.Exit(1)
-        _launch_daemon()
+        _launch_daemon(allow_plaintext)
     else:
         # Run in foreground (or as daemon-mode subprocess)
         tracker = ActivityTracker()
         tracker.start(daemon_mode=daemon_mode)
 
 
-def _launch_daemon() -> None:
+def require_encryption(allow_plaintext: bool, exit_code: int = 1) -> None:
+    """Refuse to track into an unencrypted database unless the user opted in."""
+    from focusguard.db.connection import HAS_SQLCIPHER, is_encrypted
+
+    if allow_plaintext or is_encrypted():
+        return
+    reason = (
+        "it was created without encryption; run 'focusguard privacy encrypt'"
+        if HAS_SQLCIPHER
+        else "sqlcipher3 isn't installed (see start.md § 1)"
+    )
+    console.print(f"[red]✗ Not tracking into an unencrypted database: {reason}.[/red]")
+    console.print("[dim]To track without encryption anyway, add --allow-plaintext.[/dim]")
+    raise typer.Exit(exit_code)
+
+
+def _launch_daemon(allow_plaintext: bool = False) -> None:
     """Launch FocusGuard as a detached background process."""
     import subprocess
 
     python = sys.executable
     cmd = [python, "-m", "focusguard", "start", "--daemon-mode"]
+    if allow_plaintext:
+        cmd.append("--allow-plaintext")
 
     try:
         # Launch detached subprocess

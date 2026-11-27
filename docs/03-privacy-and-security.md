@@ -65,9 +65,10 @@ App names can contain title text on Windows/Linux, so they go through the blockl
 
 ## Gaps, ranked
 
-1. **Unencrypted by default.** Making SQLCipher a core dependency would break installs on macOS
-   and Windows (no wheels). The remaining option is to have `start` refuse to run unencrypted
-   without an explicit `--allow-plaintext`. Not decided yet ([06](06-improvement-plan.md) Phase 3).
+1. **Unencrypted unless SQLCipher is installed.** Decided: `start` and `daemon install` refuse to
+   track into an unencrypted database without an explicit `--allow-plaintext`, so plaintext is a
+   choice the user makes, not a silent default. SQLCipher stays optional because it has no macOS
+   or Windows wheels. Other commands (reports, goals) still read a plain database.
 2. **Substring blocklist.** Over-redacts common words, and nothing redacts unlisted sensitive sites.
    Whole-word matching fixes the first. For the second, consider an allowlist mode for titles
    (store titles only for categorised coding/docs apps).

@@ -7,7 +7,8 @@ systemd (Linux), or Task Scheduler (Windows).
 from __future__ import annotations
 
 import sys
-from typing import Protocol
+from collections.abc import Sequence
+from typing import Annotated, Protocol
 
 import typer
 from rich.console import Console
@@ -18,15 +19,23 @@ daemon_app = typer.Typer(no_args_is_help=True)
 
 
 @daemon_app.command()
-def install() -> None:
+def install(
+    allow_plaintext: Annotated[
+        bool,
+        typer.Option("--allow-plaintext", help="Let the service track without encryption."),
+    ] = False,
+) -> None:
     """Install FocusGuard as a background service.
 
     Sets up the OS-specific daemon so FocusGuard starts automatically
     on login and survives terminal close.
     """
+    from focusguard.commands.start import require_encryption
+
+    require_encryption(allow_plaintext)
     handler = _get_platform_handler()
     try:
-        handler.install()
+        handler.install(["--allow-plaintext"] if allow_plaintext else [])
         console.print("[green]✓[/green] FocusGuard daemon installed successfully")
         console.print("[dim]It will start automatically on login.[/dim]")
     except Exception as e:
@@ -60,7 +69,7 @@ def status() -> None:
 
 
 class DaemonHandler(Protocol):
-    def install(self) -> None: ...
+    def install(self, extra_args: Sequence[str] = ()) -> None: ...
     def uninstall(self) -> None: ...
     def is_installed(self) -> bool: ...
 

@@ -81,16 +81,20 @@ order is in [docs/06-improvement-plan.md](docs/06-improvement-plan.md).
 
 ## Run it
 
-FocusGuard is **not on PyPI.** `pip install focusguard` installs an unrelated package with the same
-name. Install from source:
+FocusGuard is **not on PyPI yet**; when it is, the package will be `focusguard-cli`
+(`pip install focusguard` installs an unrelated project). Install from source:
 
 ```bash
 git clone https://github.com/Dhruv-Sharma29/FocusGuard.git && cd FocusGuard
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .                     # extras: ".[ai,github]"; encryption: see start.md § 1
-focusguard start                     # foreground; Ctrl+C to stop
+focusguard start --allow-plaintext  # foreground; Ctrl+C to stop (flag: no SQLCipher, see below)
 focusguard report                    # in another terminal
 ```
+
+`start` and `daemon install` refuse to track into an unencrypted database unless you pass
+`--allow-plaintext`. SQLCipher installs from a wheel only on Linux x86_64, so on macOS and Windows
+you'll normally need the flag ([start.md § 1](start.md#1-install)).
 
 Step-by-step setup (daemon, AI coach, GitHub, config, uninstall): [start.md](start.md).
 Every command: [docs/04-cli-reference.md](docs/04-cli-reference.md).
@@ -108,7 +112,7 @@ account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ```bash
 pip install -e ".[dev]"
-pytest                    # 164 tests, ~75% line coverage; every command has a smoke test
+pytest                    # 169 tests, ~75% line coverage; every command has a smoke test
 ruff check src tests      # clean; enforced in CI
 mypy src                  # strict, clean; enforced in CI
 python scripts/screenshots.py   # regenerate docs/images/

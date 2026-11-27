@@ -1,5 +1,6 @@
 [project]
-name = "focusguard"
+# PyPI name; `focusguard` on PyPI is an unrelated project. Import name and command stay `focusguard`.
+name = "focusguard-cli"
 version = "0.1.0"
 description = "Privacy-first developer productivity tracker"
 readme = "README.md"
@@ -37,7 +38,7 @@ encrypted = ["sqlcipher3-binary>=0.5"]
 ai = ["openai>=1.0", "ollama>=0.3"]
 github = ["gitpython>=3.1", "PyGithub>=2.0"]
 dev = ["pytest>=8.0", "pytest-cov", "ruff", "mypy", "types-psutil"]
-all = ["focusguard[encrypted,ai,github,dev]"]
+all = ["focusguard-cli[encrypted,ai,github,dev]"]
 
 [project.scripts]
 focusguard = "focusguard.main:app"

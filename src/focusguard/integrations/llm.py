@@ -67,7 +67,7 @@ def _chat_ollama(system_prompt: str, user_message: str, model: str) -> str:
     except ImportError:
         raise LLMError(
             "Ollama Python package not installed. "
-            "Install with: pip install focusguard[ai]"
+            "Install with: pip install 'focusguard-cli[ai]'"
         ) from None
 
     try:
@@ -95,7 +95,7 @@ def _chat_openai(system_prompt: str, user_message: str, model: str) -> str:
     except ImportError:
         raise LLMError(
             "OpenAI Python package not installed. "
-            "Install with: pip install focusguard[ai]"
+            "Install with: pip install 'focusguard-cli[ai]'"
         ) from None
 
     api_key = get_secret("openai_api_key")

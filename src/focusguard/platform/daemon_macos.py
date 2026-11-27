@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from textwrap import dedent
 
@@ -22,7 +23,7 @@ PLIST_PATH = LAUNCH_AGENTS_DIR / PLIST_NAME
 class MacOSDaemon:
     """macOS launchd daemon handler."""
 
-    def install(self) -> None:
+    def install(self, extra_args: Sequence[str] = ()) -> None:
         """Generate and install the launchd plist."""
         LAUNCH_AGENTS_DIR.mkdir(parents=True, exist_ok=True)
         LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -30,6 +31,7 @@ class MacOSDaemon:
         python_path = sys.executable
         stdout_log = str(LOG_DIR / "daemon.log")
         stderr_log = str(LOG_DIR / "daemon.err")
+        extra = "".join(f"\n                    <string>{a}</string>" for a in extra_args)
 
         plist_content = dedent(f"""\
             <?xml version="1.0" encoding="UTF-8"?>
@@ -46,7 +48,7 @@ class MacOSDaemon:
                     <string>-m</string>
                     <string>focusguard</string>
                     <string>start</string>
-                    <string>--daemon-mode</string>
+                    <string>--daemon-mode</string>{extra}
                 </array>
 
                 <key>RunAtLoad</key>

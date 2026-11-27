@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 TASK_NAME = "FocusGuard"
@@ -16,7 +17,7 @@ TASK_NAME = "FocusGuard"
 class WindowsDaemon:
     """Windows Task Scheduler handler."""
 
-    def install(self) -> None:
+    def install(self, extra_args: Sequence[str] = ()) -> None:
         """Create a scheduled task to run FocusGuard at logon."""
         # Use pythonw.exe for windowless execution
         python_path = sys.executable
@@ -24,7 +25,7 @@ class WindowsDaemon:
         if not Path(pythonw_path).exists():
             pythonw_path = python_path
 
-        command = f'"{pythonw_path}" -m focusguard start --daemon-mode'
+        command = " ".join([f'"{pythonw_path}" -m focusguard start --daemon-mode', *extra_args])
 
         # Create the task using schtasks
         subprocess.run(

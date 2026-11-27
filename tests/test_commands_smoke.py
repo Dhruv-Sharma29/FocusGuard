@@ -60,7 +60,7 @@ def test_start_foreground_runs_tracker():
         patch("focusguard.core.tracker.ActivityTracker") as tracker,
         patch("focusguard.platform.window.check_accessibility_permissions", return_value=True),
     ):
-        assert run("start").exit_code == 0
+        assert run("start", "--allow-plaintext").exit_code == 0
     tracker.return_value.start.assert_called_once_with(daemon_mode=False)
 
 
@@ -71,9 +71,9 @@ def test_start_detached_launches_process():
         patch("focusguard.platform.window.check_accessibility_permissions", return_value=True),
         patch("subprocess.Popen") as popen,
     ):
-        result = run("start", "-d")
+        result = run("start", "-d", "--allow-plaintext")
     assert result.exit_code == 0, result.output
-    assert "--daemon-mode" in popen.call_args.args[0]
+    assert popen.call_args.args[0][-2:] == ["--daemon-mode", "--allow-plaintext"]
 
 
 def test_stop():
@@ -199,10 +199,11 @@ def test_github_repos(tmp_path):
 def test_daemon_commands():
     handler = MagicMock()
     with patch("focusguard.commands.daemon._get_platform_handler", return_value=handler):
-        assert run("daemon", "install").exit_code == 0
+        assert run("daemon", "install", "--allow-plaintext").exit_code == 0
+        handler.install.assert_called_with(["--allow-plaintext"])
         assert run("daemon", "uninstall").exit_code == 0
         handler.install.side_effect = OSError("denied")
-        assert run("daemon", "install").exit_code == 1
+        assert run("daemon", "install", "--allow-plaintext").exit_code == 1
     assert "not running" in run("daemon", "status").output.lower()
 
 
@@ -244,3 +245,65 @@ def test_no_real_paths_touched():
     for p in (cfg.CONFIG_FILE, cfg.DB_FILE, cfg.PID_FILE):
         assert not str(p).startswith(os.path.join(home, "Library"))
         assert not str(p).startswith(os.path.join(home, ".config"))
+
+
+# ── Encryption gate (--allow-plaintext) ──────────────────────────────────────
+
+
+@pytest.fixture
+def no_sqlcipher(monkeypatch):
+    from focusguard.db import connection
+
+    monkeypatch.setattr(connection, "HAS_SQLCIPHER", False)
+
+
+def test_start_refuses_plaintext_without_flag(no_sqlcipher):
+    with patch("focusguard.core.tracker.ActivityTracker") as tracker:
+        result = run("start")
+    assert result.exit_code == 1
+    assert "--allow-plaintext" in result.output
+    tracker.assert_not_called()
+
+
+def test_service_launched_tracker_refuses_with_exit_0(no_sqlcipher):
+    """Exit 0, or launchd/systemd would restart it every 10 s."""
+    with patch("focusguard.core.tracker.ActivityTracker") as tracker:
+        assert run("start", "--daemon-mode").exit_code == 0
+    tracker.assert_not_called()
+
+
+def test_daemon_install_refuses_plaintext_without_flag(no_sqlcipher):
+    handler = MagicMock()
+    with patch("focusguard.commands.daemon._get_platform_handler", return_value=handler):
+        assert run("daemon", "install").exit_code == 1
+    handler.install.assert_not_called()
+
+
+def test_plain_file_with_sqlcipher_points_to_encrypt(monkeypatch):
+    from focusguard.db import connection
+
+    monkeypatch.setattr(connection, "HAS_SQLCIPHER", True)
+    monkeypatch.setattr(connection, "is_plaintext_db", lambda path=None: True)
+    result = run("start")
+    assert result.exit_code == 1
+    assert "privacy encrypt" in result.output
+
+
+def test_service_files_carry_the_flag(tmp_path, monkeypatch):
+    """The installed launchd plist / systemd unit really contain --allow-plaintext."""
+    import subprocess
+
+    from focusguard.platform import daemon_linux, daemon_macos
+
+    monkeypatch.setattr(subprocess, "run", MagicMock())
+    monkeypatch.setattr(daemon_macos, "LAUNCH_AGENTS_DIR", tmp_path)
+    monkeypatch.setattr(daemon_macos, "PLIST_PATH", tmp_path / "x.plist")
+    monkeypatch.setattr(daemon_linux, "SYSTEMD_USER_DIR", tmp_path)
+    monkeypatch.setattr(daemon_linux, "SERVICE_PATH", tmp_path / "x.service")
+    daemon_macos.MacOSDaemon().install(["--allow-plaintext"])
+    daemon_linux.LinuxDaemon().install(["--allow-plaintext"])
+    import plistlib
+
+    plist = plistlib.loads((tmp_path / "x.plist").read_bytes())  # must stay valid XML
+    assert plist["ProgramArguments"][-2:] == ["--daemon-mode", "--allow-plaintext"]
+    assert "--daemon-mode --allow-plaintext" in (tmp_path / "x.service").read_text()

@@ -9,8 +9,9 @@ defaults. Behaviour notes flag where a command doesn't do what its output says.
 
 | Command | Does |
 | --- | --- |
-| `focusguard start` | Run the tracker in the foreground. Ctrl+C stops it. Refuses if a tracker is already running. |
+| `focusguard start` | Run the tracker in the foreground. Ctrl+C stops it. Refuses if a tracker is already running, or if the database isn't encrypted (see `--allow-plaintext`). |
 | `focusguard start -d` / `--daemon` | Start a detached tracker (`--daemon-mode` child) and return. Lives until logout or `stop`. Refuses when the OS daemon is installed. |
+| `… --allow-plaintext` | Track into an unencrypted database anyway (no SQLCipher, or a database that predates it). Passed on to the `-d` child. |
 | `focusguard stop` | SIGTERM the tracker from the PID file, wait up to 5 s. |
 | `focusguard stats` | One line: score, trend, coding and distraction time today, since the first activity today. |
 | `focusguard report` | Full dashboard for today. |
@@ -68,7 +69,7 @@ Modes: **coach** (encouraging), **strict** (direct), **friend** (casual, avoids 
 
 | Command | Does |
 | --- | --- |
-| `install` | Write and load the launchd plist / systemd user unit / scheduled task (see [start.md § 4](../start.md#4-survive-reboots-daemon)). |
+| `install` · `install --allow-plaintext` | Write and load the launchd plist / systemd user unit / scheduled task (see [start.md § 4](../start.md#4-survive-reboots-daemon)). Refuses without encryption unless given the flag, which it writes into the service command. |
 | `uninstall` | Unload and remove it. |
 | `status` | Running or not, with PID, from the PID file. |
 

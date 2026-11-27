@@ -60,7 +60,7 @@ def get_weekly_summary(days: int = 7) -> GitHubSummary | None:
     try:
         from github import Github
     except ImportError:
-        logger.warning("PyGithub not installed. Install with: pip install focusguard[github]")
+        logger.warning("PyGithub not installed. Install with: pip install 'focusguard-cli[github]'")
         return None
 
     token = get_secret(TOKEN_KEY)

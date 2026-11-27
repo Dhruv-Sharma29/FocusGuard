@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from textwrap import dedent
 
@@ -21,12 +22,13 @@ SERVICE_PATH = SYSTEMD_USER_DIR / SERVICE_NAME
 class LinuxDaemon:
     """Linux systemd user service handler."""
 
-    def install(self) -> None:
+    def install(self, extra_args: Sequence[str] = ()) -> None:
         """Generate and install the systemd user service."""
         SYSTEMD_USER_DIR.mkdir(parents=True, exist_ok=True)
         LOG_DIR.mkdir(parents=True, exist_ok=True)
 
         python_path = sys.executable
+        extra = "".join(f" {a}" for a in extra_args)
 
         service_content = dedent(f"""\
             [Unit]
@@ -36,7 +38,7 @@ class LinuxDaemon:
 
             [Service]
             Type=simple
-            ExecStart={python_path} -m focusguard start --daemon-mode
+            ExecStart={python_path} -m focusguard start --daemon-mode{extra}
             Restart=on-failure
             RestartSec=10
             Environment=DISPLAY=:0

@@ -5,8 +5,8 @@ From a fresh clone to a running tracker, then the optional pieces. Every command
 
 ## 1. Install
 
-Python 3.10 or newer. FocusGuard is **not on PyPI**: `pip install focusguard` gets you an unrelated
-package. Install from source.
+Python 3.10 or newer. FocusGuard is **not on PyPI yet**; its package name will be `focusguard-cli`
+(`pip install focusguard` gets you an unrelated project). Install from source.
 
 ```bash
 git clone https://github.com/Dhruv-Sharma29/FocusGuard.git
@@ -53,6 +53,17 @@ focusguard start -d         # detached background process (stops on logout/reboo
 focusguard stop
 ```
 
+**Unencrypted database?** `start` refuses to track into one and says why. Either install SQLCipher
+(§ 1; on Linux `pip install -e ".[encrypted]"`), or accept a plain database explicitly:
+
+```bash
+focusguard start --allow-plaintext
+focusguard start -d --allow-plaintext
+```
+
+If SQLCipher is installed but your database predates it, the message tells you to run
+`focusguard privacy encrypt` instead.
+
 Leave it running for a while, then:
 
 ```bash
@@ -72,10 +83,15 @@ shows whether the focus score agrees with you any better than plain productive m
 `start -d` stops at logout. To start automatically at login, install the OS service:
 
 ```bash
-focusguard daemon install
+focusguard daemon install                     # with SQLCipher
+focusguard daemon install --allow-plaintext   # without; the flag is written into the service
 focusguard daemon status
 focusguard daemon uninstall
 ```
+
+> **Upgrading with a daemon already installed?** Its service command has no `--allow-plaintext`,
+> so without SQLCipher the tracker it launches now exits (cleanly, without a restart loop) and
+> nothing is tracked. Run `focusguard daemon install --allow-plaintext` once to rewrite it.
 
 | OS | What `install` creates |
 | --- | --- |

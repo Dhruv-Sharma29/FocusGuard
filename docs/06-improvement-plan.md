@@ -48,8 +48,8 @@ total and 89% for `commands/`.
 | --- | --- | --- |
 | ✅ Schema migrations: numbered steps keyed off `schema_version` | — | A v1 database opens under v2 with data intact, in a test |
 | ✅ Detect a plaintext DB when SQLCipher is present; `privacy encrypt` migrates it with `sqlcipher_export` | 05 #10 | Test: plain DB → encrypt → same rows readable (real SQLCipher, `encrypted` CI job) |
-| Decide: encrypted by default? A core dependency is ruled out (`sqlcipher3-binary` is Linux-only); the option left is `start` refusing plaintext without `--allow-plaintext` | 03 gap 1 | Decision recorded in [03](03-privacy-and-security.md) |
-| Rename the distribution before any PyPI upload (e.g. `focusguard-cli`; the CLI command can stay `focusguard`) | 05 #5 | `pip install <name>` from TestPyPI installs this project |
+| ✅ Decided: `start` and `daemon install` refuse plaintext without `--allow-plaintext` (a core SQLCipher dependency is ruled out: Linux-only wheels) | 03 gap 1 | Recorded in [03](03-privacy-and-security.md); refusal, daemon pass-through and no-restart-loop tested |
+| ✅ Distribution renamed to `focusguard-cli`; command and import stay `focusguard` | 05 #5 | Builds and installs as `focusguard-cli` locally. Publishing (TestPyPI, then PyPI) not done: that's a release step for you to ask for |
 
 ## Phase 4 — measure before adding features
 

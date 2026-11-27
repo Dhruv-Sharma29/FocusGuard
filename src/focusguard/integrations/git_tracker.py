@@ -93,7 +93,7 @@ def scan_repo(repo_path: str, days: int = 7) -> RepoSummary | None:
     try:
         from git import InvalidGitRepositoryError, Repo
     except ImportError:
-        logger.warning("GitPython not installed. Install with: pip install focusguard[github]")
+        logger.warning("GitPython not installed: pip install 'focusguard-cli[github]'")
         return None
 
     path = Path(repo_path).expanduser().resolve()
