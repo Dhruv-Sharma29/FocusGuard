@@ -112,8 +112,8 @@ local goal summary. Test: `test_coach_help_falls_back_when_llm_fails`.
 
 | Check | Result |
 | --- | --- |
-| `pytest` | 152 passed, 1 skipped without SQLCipher (78 in v0.1.0) |
-| Line coverage | 72% (25% in v0.1.0). `commands/` 89%. Lowest: `platform/daemon_*` 0%, `llm.py` 21%, `github_api.py` 26%, `idle.py` 28%, `window.py` 32% (OS and network code, mocked at the command level) |
+| `pytest` | 160 passed, 1 skipped without SQLCipher (78 in v0.1.0) |
+| Line coverage | 75% (25% in v0.1.0). `commands/` 89%. Lowest: `platform/daemon_*` 0%, `llm.py` 21%, `github_api.py` 26%, `idle.py` 28%, `window.py` 32% (OS and network code, mocked at the command level) |
 | `ruff check src tests` | Clean, enforced in CI (94 findings in v0.1.0). `RUF001`–`003` are ignored: the en dashes and × are deliberate |
 | `mypy src` (strict, `platform = "linux"`) | Clean, enforced in CI (31 errors in v0.1.0) |
 

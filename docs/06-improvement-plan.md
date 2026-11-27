@@ -56,13 +56,21 @@ total and 89% for `commands/`.
 The score is a claim until these exist. This is the part of the project that makes it more than a
 tracker, and the evidence a report or viva will ask for ([00](00-charter.md)).
 
-| Change | Done when |
-| --- | --- |
-| `focusguard rate 1-5`: store a daily self-rating (new table, via a Phase 3 migration) | Rating saved and shown in `report -p week` |
-| `scripts/export_titles.py`: distinct (app, title) pairs from your own DB to CSV for hand-labelling, titles already redacted | CSV of ≥ 200 rows labelled by hand |
-| `scripts/eval_classifier.py`: per-category precision/recall against that CSV | Numbers in [02](02-tracking-and-scoring.md) |
-| 15-minute walk-away test for idle detection | Minutes logged as active ≤ `idle_threshold` |
-| `scripts/score_validity.py`: Spearman correlation of daily score vs rating, next to the plain productive-ratio baseline | Two weeks of data; both numbers reported, whichever wins |
+**The tools are built** (on `main`, tested). They became CLI commands rather than scripts, so they
+read the same config and database as everything else. **The measurements themselves are not done**:
+they need your own data, and nobody else can collect it.
+
+| Tool (✅ built) | Measurement still to do | Done when |
+| --- | --- | --- |
+| `focusguard rate 1-5 [--date] [--note]`: daily self-rating (schema v2, `ratings` table); shown in `report -p week` | Rate every day | — |
+| `focusguard eval titles FILE.csv`: distinct (app, title) pairs with minutes and the current prediction; never overwrites | Label ≥ 200 rows by hand | CSV labelled |
+| `focusguard eval classifier FILE.csv`: per-category precision/recall, exact accuracy, and productive/distraction/neutral accuracy | Run it on the labelled CSV | Numbers in [02](02-tracking-and-scoring.md) |
+| `focusguard eval idle -m 20`: what was logged in the last N minutes | Walk away for 15 min with an editor focused, then run it | Minutes logged as active ≤ `idle_threshold` |
+| `focusguard eval score`: Spearman ρ of daily score vs rating, next to the plain productive-ratio baseline | Two weeks of daily ratings | Both ρ reported, whichever wins |
+
+With 14 days, a Spearman ρ needs to be above roughly 0.54 to be distinguishable from chance at
+the usual 5% level [verify against a critical-value table], so treat small differences between the
+two ρ values as noise.
 
 ## Phase 5 — classification v2 (only if Phase 4 shows it's needed)
 

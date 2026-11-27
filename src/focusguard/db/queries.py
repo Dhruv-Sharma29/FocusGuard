@@ -7,7 +7,7 @@ All functions use the connection manager from db.connection.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from focusguard.db.connection import execute, query, query_one
@@ -472,3 +472,36 @@ def delete_scores_before(before: datetime, period: str) -> int:
         (_ts(before), period),
     )
     return cursor.rowcount or 0
+
+
+# ── Ratings and evaluation ───────────────────────────────────────────────────
+
+
+def save_rating(day: date, rating: int, note: str | None = None) -> None:
+    """Store (or replace) the self-rating for a day."""
+    execute(
+        """INSERT INTO ratings (date, rating, note) VALUES (?, ?, ?)
+           ON CONFLICT(date) DO UPDATE SET rating = excluded.rating, note = excluded.note""",
+        (day.isoformat(), rating, note),
+    )
+
+
+def get_ratings(start: date, end: date) -> dict[date, int]:
+    """Ratings between two dates (inclusive), keyed by date."""
+    rows = query(
+        "SELECT date, rating FROM ratings WHERE date BETWEEN ? AND ? ORDER BY date",
+        (start.isoformat(), end.isoformat()),
+    )
+    return {date.fromisoformat(r["date"]): int(r["rating"]) for r in rows}
+
+
+def get_distinct_titles() -> list[dict[str, Any]]:
+    """Every distinct (app, title) pair with its non-idle minutes, most-used first."""
+    rows = query(
+        """SELECT app_name, window_title, SUM(duration_seconds) / 60.0 AS minutes
+           FROM activity_log
+           WHERE is_idle = 0
+           GROUP BY app_name, window_title
+           ORDER BY minutes DESC"""
+    )
+    return [dict(r) for r in rows]

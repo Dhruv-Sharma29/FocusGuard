@@ -86,6 +86,8 @@ def seed() -> None:
             ((now - timedelta(hours=h)).strftime("%Y-%m-%d %H:%M:%S"), 55 + 3 * (8 - h)),
         )
 
+    for back, rating in [(1, 4), (2, 3), (3, 4), (5, 2)]:
+        queries.save_rating((datetime.now() - timedelta(days=back)).date(), rating)
     queries.add_goal("Ship the weekly report view")
     queries.complete_goal(queries.add_goal("Write tests for the scorer"))
     queries.add_goal("Add idle detection on macOS")

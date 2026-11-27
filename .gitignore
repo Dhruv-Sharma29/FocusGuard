@@ -26,6 +26,9 @@ Thumbs.db
 
 # FocusGuard data (never commit user data)
 *.db
+# `focusguard eval titles` exports: your real window titles
+*labels*.csv
+*titles*.csv
 *.db-wal
 *.db-shm
 focusguard.pid

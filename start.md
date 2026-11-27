@@ -61,6 +61,12 @@ focusguard report           # full dashboard
 focusguard report -p week   # 7-day table (also: month)
 ```
 
+### Rate your day
+
+Once a day, `focusguard rate 1-5` (how focused it felt). After two weeks, `focusguard eval score`
+shows whether the focus score agrees with you any better than plain productive minutes do. See
+[docs/04-cli-reference.md](docs/04-cli-reference.md#measuring-focusguard-rate-and-focusguard-eval-) for the other `eval` tools.
+
 ## 4. Survive reboots (daemon)
 
 `start -d` stops at logout. To start automatically at login, install the OS service:

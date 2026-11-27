@@ -34,7 +34,8 @@ src/focusguard/
 │   ├── tracker.py         Poll loop, classification, PID file
 │   ├── scorer.py          Focus score, decay, trend, snapshots
 │   ├── pattern_engine.py  Weighted procrastination signals (not wired in)
-│   └── retention.py       Aggregate-then-delete old rows; prunes session scores
+│   ├── retention.py       Aggregate-then-delete old rows; prunes session scores
+│   └── evaluation.py      Spearman, score validity, classifier precision/recall
 ├── db/
 │   ├── connection.py  Thread-local connection; SQLCipher if installed (plain files stay plain until `privacy encrypt`)
 │   ├── models.py      Schema v1, created on every command (idempotent)
@@ -55,7 +56,8 @@ src/focusguard/
 | `goals` | `goal` commands | dashboard, coach | Newest active goal is "the" goal. |
 | `git_activity` | **nothing** | dashboard "Commits", pattern engine, retention | `log_git_event()` has no caller, so this table stays empty. |
 | `daily_summaries` | `retention.py`, for days past `retention_days` | nothing | Written, but no report reads them yet. |
-| `schema_version` | `init_db` | `init_db` | Version 1. `models.MIGRATIONS[i]` upgrades version i to i+1, each step in one transaction with its version bump; a newer database is refused. |
+| `ratings` (v2) | `focusguard rate` | `report -p week`, `eval score` | One 1–5 rating per date. |
+| `schema_version` | `init_db` | `init_db` | Version 2. `models.MIGRATIONS[i]` upgrades version i to i+1, each step in one transaction with its version bump; a newer database is refused. |
 
 ## Design rules, and where the code keeps them
 

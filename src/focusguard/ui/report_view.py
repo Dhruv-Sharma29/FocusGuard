@@ -44,12 +44,14 @@ def render_period_report(days: int = 7) -> None:
     table.add_column("Distract", justify="right", style=theme.danger)
     table.add_column("Total", justify="right")
     table.add_column("Commits", justify="center", style=theme.secondary)
+    table.add_column("Rated", justify="center")
 
     total_coding = 0.0
     total_distraction = 0.0
     total_tracked = 0.0
     total_commits = 0
     scores = []
+    ratings = queries.get_ratings((now - timedelta(days=days - 1)).date(), now.date())
 
     for i in range(days):
         day = now - timedelta(days=days - 1 - i)
@@ -76,6 +78,7 @@ def render_period_report(days: int = 7) -> None:
             _fmt_time(distraction),
             _fmt_time(total),
             str(commits),
+            str(ratings.get(day.date(), "—")),
         )
 
     # Summary row
@@ -89,6 +92,7 @@ def render_period_report(days: int = 7) -> None:
         f"[bold]{_fmt_time(total_distraction / max(days, 1))}[/bold]/day",
         _fmt_time(total_tracked / max(days, 1)),
         f"{total_commits}",
+        f"{sum(ratings.values()) / len(ratings):.1f}" if ratings else "—",
     )
 
     console.print()

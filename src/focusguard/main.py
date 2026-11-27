@@ -47,6 +47,7 @@ def main(
 
 from focusguard.commands.coach import coach_app  # noqa: E402
 from focusguard.commands.daemon import daemon_app  # noqa: E402
+from focusguard.commands.evaluate import eval_app, rate  # noqa: E402
 from focusguard.commands.github_cmd import github_app  # noqa: E402
 from focusguard.commands.goal import goal_app  # noqa: E402
 from focusguard.commands.privacy import privacy_app  # noqa: E402
@@ -59,11 +60,13 @@ app.command()(start)
 app.command()(stop)
 app.command()(report)
 app.command()(stats)
+app.command()(rate)
 app.add_typer(goal_app, name="goal", help="Manage focus goals")
 app.add_typer(daemon_app, name="daemon", help="Background daemon management")
 app.add_typer(coach_app, name="coach", help="AI coaching & personality modes")
 app.add_typer(github_app, name="github", help="GitHub integration")
 app.add_typer(privacy_app, name="privacy", help="Privacy controls")
+app.add_typer(eval_app, name="eval", help="Measure whether the score means anything")
 
 
 # ── Convenience aliases ──────────────────────────────────────────────────────

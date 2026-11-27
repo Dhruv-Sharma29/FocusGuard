@@ -18,6 +18,16 @@ defaults. Behaviour notes flag where a command doesn't do what its output says.
 
 ![focusguard report -p week](images/report-week.svg)
 
+## Measuring: `focusguard rate` and `focusguard eval …`
+
+| Command | Does |
+| --- | --- |
+| `rate <1-5>` · `--date YYYY-MM-DD` · `--note TEXT` | Store how focused the day felt (default today; re-rating replaces). Shown in the `Rated` column of `report -p week`. |
+| `eval titles FILE.csv` | Write every distinct (app, title) pair with minutes and the current classifier's guess, plus an empty `label` column. Refuses to overwrite. The file holds your window titles: keep it private. |
+| `eval classifier FILE.csv` | Compare the classifier with your labels: per-category precision/recall, exact accuracy, and productive/distraction/neutral accuracy. Unknown labels are listed and skipped. |
+| `eval score` · `-d 60` | For rated days with activity: Spearman ρ of the daily score vs rating, and of the plain productive ratio vs rating. |
+| `eval idle` · `-m 20` | What was logged in the last N minutes, for the walk-away idle test. |
+
 ## Goals: `focusguard goal …`
 
 | Command | Does |

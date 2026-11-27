@@ -13,7 +13,8 @@ from focusguard.db import connection, models, queries
 from focusguard.main import app
 
 runner = CliRunner()
-RATINGS = "CREATE TABLE ratings (date TEXT PRIMARY KEY, rating INTEGER NOT NULL);"
+NEXT_STEP = "CREATE TABLE future_table (x INTEGER);"
+CURRENT = models.SCHEMA_VERSION
 
 
 def _tables() -> set[str]:
@@ -25,16 +26,31 @@ def _tables() -> set[str]:
 
 
 def test_fresh_db_is_at_current_version():
-    assert models.get_schema_version() == models.SCHEMA_VERSION == 1
+    assert models.get_schema_version() == CURRENT == len(models.MIGRATIONS)
+    assert "ratings" in _tables()  # v2
+
+
+def test_v1_database_upgrades_with_data_intact(tmp_path, monkeypatch):
+    """A database written by v0.1.0 (schema v1) gains the v2 ratings table and keeps its rows."""
+    path = tmp_path / "v1.db"
+    _plain_db(path, rows=4)
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    monkeypatch.setattr(connection, "_get_connection", lambda: conn)
+    models.init_db()
+    assert models.get_schema_version() == CURRENT
+    assert "ratings" in _tables()
+    assert connection.query("SELECT COUNT(*) AS n FROM activity_log")[0]["n"] == 4
+    conn.close()
 
 
 def test_new_step_upgrades_and_keeps_data(monkeypatch):
     queries.log_activity("Code", "a.py", "coding", 60, False)
-    monkeypatch.setattr(models, "MIGRATIONS", [*models.MIGRATIONS, RATINGS])
+    monkeypatch.setattr(models, "MIGRATIONS", [*models.MIGRATIONS, NEXT_STEP])
     models.init_db()
     models.init_db()  # idempotent
-    assert models.get_schema_version() == 2
-    assert "ratings" in _tables()
+    assert models.get_schema_version() == CURRENT + 1
+    assert "future_table" in _tables()
     assert len(queries.get_activity_range(datetime(2000, 1, 1))) == 1
 
 
@@ -43,7 +59,7 @@ def test_failed_step_rolls_back(monkeypatch):
     monkeypatch.setattr(models, "MIGRATIONS", [*models.MIGRATIONS, broken])
     with pytest.raises(sqlite3.OperationalError):
         models.init_db()
-    assert models.get_schema_version() == 1
+    assert models.get_schema_version() == CURRENT
     assert "half_done" not in _tables()
 
 

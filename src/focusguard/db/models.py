@@ -80,9 +80,19 @@ CREATE INDEX IF NOT EXISTS idx_daily_date ON daily_summaries(date);
 """
 
 
+# v2: one self-rating (1-5) per day, the ground truth for `focusguard eval score`.
+RATINGS_V2 = """
+CREATE TABLE IF NOT EXISTS ratings (
+    date DATE PRIMARY KEY,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    note TEXT,
+    created_at DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+"""
+
 # MIGRATIONS[i] upgrades a database from version i to version i + 1.
 # Append new steps; never edit one that has shipped.
-MIGRATIONS: list[str] = [SCHEMA_V1]
+MIGRATIONS: list[str] = [SCHEMA_V1, RATINGS_V2]
 SCHEMA_VERSION = len(MIGRATIONS)
 
 

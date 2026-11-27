@@ -65,6 +65,7 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | Focus score with time decay | Works. Only as good as the classifier feeding it. | `core/scorer.py` |
 | Dashboard, `stats`, week/month report | Works. The report's "Commits" column is always 0. | `ui/` |
 | Goals | Works. | `commands/goal.py` |
+| Daily rating and self-evaluation | `rate 1-5`, `eval titles/classifier/score/idle`. Tools only: no measurements yet. | `commands/evaluate.py` |
 | Personality modes (template messages) | Works. | `personality/` |
 | AI coach (Ollama / OpenAI) | Works when enabled. | `integrations/llm.py` |
 | GitHub summary, local repo scan | Works (`.[github]` extra). | `integrations/` |
@@ -107,7 +108,7 @@ account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ```bash
 pip install -e ".[dev]"
-pytest                    # 153 tests, ~72% line coverage; every command has a smoke test
+pytest                    # 161 tests, ~75% line coverage; every command has a smoke test
 ruff check src tests      # clean; enforced in CI
 mypy src                  # strict, clean; enforced in CI
 python scripts/screenshots.py   # regenerate docs/images/

@@ -46,7 +46,8 @@ optionally local git repos and the user's GitHub account.
 ## How success should be measured
 
 None of these has been measured yet. They are the checks that would show whether the score means
-anything; [06](06-improvement-plan.md) schedules them.
+anything. The tools for the first three now exist (`focusguard rate`, `focusguard eval …`);
+[06](06-improvement-plan.md) Phase 4 says how to use them.
 
 | Question | Measure | Why it matters |
 | --- | --- | --- |
