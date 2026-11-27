@@ -6,9 +6,8 @@ Uses a simple version-based migration strategy.
 
 from __future__ import annotations
 
+from focusguard.db import connection
 from focusguard.db.connection import execute, query_one
-
-SCHEMA_VERSION = 1
 
 # ── Schema SQL ───────────────────────────────────────────────────────────────
 
@@ -81,22 +80,35 @@ CREATE INDEX IF NOT EXISTS idx_daily_date ON daily_summaries(date);
 """
 
 
+# MIGRATIONS[i] upgrades a database from version i to version i + 1.
+# Append new steps; never edit one that has shipped.
+MIGRATIONS: list[str] = [SCHEMA_V1]
+SCHEMA_VERSION = len(MIGRATIONS)
+
+
 def init_db() -> None:
-    """Initialize the database schema.
+    """Create the schema or upgrade it to SCHEMA_VERSION. Safe to call repeatedly.
 
-    Creates all tables if they don't exist and runs any pending migrations.
-    Safe to call multiple times (idempotent).
+    Each step runs in one transaction together with its version bump, so a failed
+    step leaves the database as it was.
     """
-    # Execute full schema (CREATE IF NOT EXISTS is safe to repeat)
-    for statement in SCHEMA_V1.split(";"):
-        statement = statement.strip()
-        if statement:
-            execute(statement + ";")
-
-    # Set schema version if not already set
-    row = query_one("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
-    if row is None:
-        execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
+    execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
+    current = get_schema_version()
+    if current > len(MIGRATIONS):
+        raise RuntimeError(
+            f"The database is at schema v{current}, newer than this FocusGuard "
+            f"supports (v{len(MIGRATIONS)}). Upgrade FocusGuard."
+        )
+    conn = connection._get_connection()
+    for version in range(current + 1, len(MIGRATIONS) + 1):
+        try:
+            conn.executescript(
+                f"BEGIN;\n{MIGRATIONS[version - 1]}\n"
+                f"INSERT INTO schema_version (version) VALUES ({version});\nCOMMIT;"
+            )
+        except Exception:
+            conn.rollback()
+            raise
 
 
 def get_schema_version() -> int:

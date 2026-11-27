@@ -32,8 +32,8 @@ honest as the category each sample gets.
 ## Status
 
 v0.1.0 plus unreleased work on `main`: a CI workflow (Linux, macOS, Windows × Python 3.10, 3.12)
-and fixes for 05 #1–4, 6, 9, 12, 13 and most low items. 145 tests pass in CI on Linux, macOS and
-Windows (Python 3.10 and 3.12); ruff and strict mypy are clean. Line coverage is about 73%; the
+and fixes for 05 #1–4, 6, 9, 10, 12, 13 and most low items. 153 tests, run in CI on Linux, macOS
+and Windows (Python 3.10 and 3.12), with the SQLCipher round trip in a separate Linux job; ruff and strict mypy are clean. Line coverage is about 72%; the
 daemon installers and the network clients are the least tested.
 Findings in these docs come from reading the code and running it on macOS on 2026-11-26. Windows and
 Linux paths were read, not run.

@@ -13,7 +13,7 @@ git clone https://github.com/Dhruv-Sharma29/FocusGuard.git
 cd FocusGuard
 python3 -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
-pip install -e ".[encrypted]"
+pip install -e .                     # Linux x86_64: ".[encrypted]" for an encrypted database
 focusguard --version                 # FocusGuard v0.1.0
 ```
 
@@ -21,16 +21,21 @@ Extras, combinable as `".[encrypted,ai,github]"`:
 
 | Extra | Adds | Without it |
 | --- | --- | --- |
-| `encrypted` | SQLCipher, so the database is encrypted with a key kept in the OS keyring | Database is **plain SQLite**; commands that open it print a warning |
+| `encrypted` | SQLCipher (`sqlcipher3-binary`), so the database is encrypted with a key kept in the OS keyring. **Linux x86_64 only**: that package has no macOS or Windows wheels, so the extra fails to install there | Database is **plain SQLite**; commands that open it print a warning |
 | `ai` | Ollama and OpenAI clients for `coach help` | Personality modes still work from local templates |
 | `github` | GitPython and PyGithub for `github summary` / `github repos` | Those commands print an install hint |
 | `dev` | pytest, ruff, mypy, types-psutil | — |
 
-Want `focusguard` on your PATH outside the venv? `pipx install ".[encrypted]"` from the repo root.
+Want `focusguard` on your PATH outside the venv? `pipx install .` from the repo root.
 
-> **Installing `encrypted` later?** The connection code assumes the database it opens is encrypted.
-> An existing plain database won't open after you add the extra. Back it up, then delete it, or
-> install the extra on day one. [docs/05-known-issues.md](docs/05-known-issues.md) has details.
+**Encryption on macOS or Windows** [verify]: install the SQLCipher library (macOS:
+`brew install sqlcipher`), then `pip install sqlcipher3`, which builds against it. FocusGuard uses
+whichever `sqlcipher3` module is importable.
+
+**Adding encryption later** is supported. An existing plain database keeps opening (with a
+warning) until you run `focusguard stop` and then `focusguard privacy encrypt`, which copies it
+into an encrypted file, checks every table's row count, and only then replaces the original. Back
+up the key afterwards with `focusguard privacy export-key`.
 
 ## 2. Platform permissions
 

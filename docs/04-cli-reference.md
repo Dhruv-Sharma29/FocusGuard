@@ -69,6 +69,7 @@ Modes: **coach** (encouraging), **strict** (direct), **friend** (casual, avoids 
 | `show` | What is and isn't tracked, file paths, whether the DB is encrypted, retention setting. |
 | `blocklist` · `blocklist list` | Print the active patterns. |
 | `blocklist add <p>` · `blocklist remove <p>` | Add or remove a pattern and save the config. `remove` exits 1 if the pattern isn't there. Restart a running tracker to apply. |
+| `encrypt` | Convert an existing unencrypted database to SQLCipher (needs `sqlcipher3`; stop the tracker first). Copies, verifies row counts, then replaces. |
 | `export-key` | Print the database encryption key, for backup. |
 | `uninstall` · `uninstall -y` | Stop the tracker, remove the daemon, delete data/config/log folders and the keyring entries. Irreversible. |
 

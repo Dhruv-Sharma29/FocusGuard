@@ -36,7 +36,7 @@ src/focusguard/
 │   ├── pattern_engine.py  Weighted procrastination signals (not wired in)
 │   └── retention.py       Aggregate-then-delete old rows; prunes session scores
 ├── db/
-│   ├── connection.py  Thread-local connection; SQLCipher if installed, else sqlite3
+│   ├── connection.py  Thread-local connection; SQLCipher if installed (plain files stay plain until `privacy encrypt`)
 │   ├── models.py      Schema v1, created on every command (idempotent)
 │   └── queries.py     All SQL lives here
 ├── integrations/      git_tracker.py (GitPython), github_api.py (PyGithub), llm.py (Ollama/OpenAI)
@@ -55,7 +55,7 @@ src/focusguard/
 | `goals` | `goal` commands | dashboard, coach | Newest active goal is "the" goal. |
 | `git_activity` | **nothing** | dashboard "Commits", pattern engine, retention | `log_git_event()` has no caller, so this table stays empty. |
 | `daily_summaries` | `retention.py`, for days past `retention_days` | nothing | Written, but no report reads them yet. |
-| `schema_version` | `init_db` | nothing | Version 1; there is no migration path yet. |
+| `schema_version` | `init_db` | `init_db` | Version 1. `models.MIGRATIONS[i]` upgrades version i to i+1, each step in one transaction with its version bump; a newer database is refused. |
 
 ## Design rules, and where the code keeps them
 

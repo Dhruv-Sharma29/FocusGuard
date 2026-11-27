@@ -67,10 +67,10 @@ def show_privacy() -> None:
     db_exists = DB_FILE.exists()
     db_size = f"{DB_FILE.stat().st_size / 1024:.1f} KB" if db_exists else "not created"
 
-    from focusguard.db.connection import HAS_SQLCIPHER
+    from focusguard.db.connection import is_encrypted
     encryption = (
         f"[{theme.success}]encrypted (SQLCipher)[/{theme.success}]"
-        if HAS_SQLCIPHER
+        if is_encrypted()
         else f"[{theme.warning}]NOT encrypted[/{theme.warning}]"
     )
 
@@ -148,6 +148,34 @@ def manage_blocklist(
         console.print(f"  [red]✗ Unknown action: {action}[/red]")
         console.print("  [dim]Valid actions: list, add, remove[/dim]")
         raise typer.Exit(1)
+
+
+@privacy_app.command("encrypt")
+def encrypt() -> None:
+    """Encrypt an existing unencrypted database with SQLCipher.
+
+    Needed when the database was created before sqlcipher3 was installed.
+    """
+    from focusguard.core.tracker import is_tracker_running
+    from focusguard.db.connection import HAS_SQLCIPHER, encrypt_plaintext_db, is_plaintext_db
+
+    if not HAS_SQLCIPHER:
+        console.print("  [red]✗ sqlcipher3 is not installed.[/red]")
+        console.print("  [dim]See start.md § 1 for how to install it on your OS.[/dim]")
+        raise typer.Exit(1)
+    if not is_plaintext_db():
+        console.print("  [dim]Nothing to do: no unencrypted database.[/dim]")
+        return
+    if is_tracker_running():
+        console.print("  [red]✗ Stop the tracker first: focusguard stop[/red]")
+        raise typer.Exit(1)
+    try:
+        rows = encrypt_plaintext_db()
+    except RuntimeError as e:
+        console.print(f"  [red]✗ {e}[/red]")
+        raise typer.Exit(1) from None
+    console.print(f"  [green]✓[/green] Encrypted the database ({rows} rows, verified).")
+    console.print("  [dim]Back up the key now: focusguard privacy export-key[/dim]")
 
 
 @privacy_app.command("export-key")

@@ -1,8 +1,8 @@
 # 05 — Known issues
 
 Verified on macOS with Python 3.12 on 2026-11-26 against commit `0176c5a`. Ordered by how much
-each one misleads the user. Issues 1–4, 6, 9, 12 and 13, and the first five low-severity items, are fixed on `main` (not yet
-released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
+each one misleads the user. Issues 1–4, 6, 9, 10, 12 and 13, and the first five low-severity items, are fixed on `main` (not
+yet released); their entries say what changed. Severity: **high** = numbers or privacy promises are wrong;
 **medium** = a feature silently does nothing; **low** = cosmetic or edge case.
 
 ## High
@@ -73,10 +73,12 @@ every row (`ui/report_view.py`, marked `TODO`). **Fix:** have the tracker scan
 ### 9. `coach mode` doesn't persist — **fixed**
 v0.1.0 printed "Switched to … mode" without saving. It now writes `[personality] mode`.
 
-### 10. Adding SQLCipher later breaks the existing database
-`_get_connection` always keys the DB when `sqlcipher3` is importable. A database created without
-it is plaintext, so every query fails with "file is not a database". **Fix:** detect a plaintext
-DB (header `SQLite format 3`) and offer `sqlcipher_export` migration, or refuse with instructions.
+### 10. Adding SQLCipher later breaks the existing database — **fixed**
+In v0.1.0 `_get_connection` keyed the database whenever `sqlcipher3` was importable, so a database
+created without it failed every query with "file is not a database". Now a plain file (header
+`SQLite format 3`) opens unencrypted with a warning, and `privacy encrypt` converts it in place
+after verifying row counts. Tests: `tests/test_storage.py`; the real-SQLCipher round trip runs in
+the `encrypted` CI job, because `sqlcipher3-binary` has Linux wheels only.
 
 ### 11. Docs pointed macOS users at the wrong config path
 The config lives at `~/Library/Application Support/focusguard/config.toml` on macOS
@@ -110,8 +112,8 @@ local goal summary. Test: `test_coach_help_falls_back_when_llm_fails`.
 
 | Check | Result |
 | --- | --- |
-| `pytest` | 145 passed (78 in v0.1.0) |
-| Line coverage | 73% (25% in v0.1.0). `commands/` 89%. Lowest: `platform/daemon_*` 0%, `llm.py` 21%, `github_api.py` 26%, `idle.py` 28%, `window.py` 32% (OS and network code, mocked at the command level) |
+| `pytest` | 152 passed, 1 skipped without SQLCipher (78 in v0.1.0) |
+| Line coverage | 72% (25% in v0.1.0). `commands/` 89%. Lowest: `platform/daemon_*` 0%, `llm.py` 21%, `github_api.py` 26%, `idle.py` 28%, `window.py` 32% (OS and network code, mocked at the command level) |
 | `ruff check src tests` | Clean, enforced in CI (94 findings in v0.1.0). `RUF001`–`003` are ignored: the en dashes and × are deliberate |
 | `mypy src` (strict, `platform = "linux"`) | Clean, enforced in CI (31 errors in v0.1.0) |
 

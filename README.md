@@ -69,7 +69,7 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | AI coach (Ollama / OpenAI) | Works when enabled. | `integrations/llm.py` |
 | GitHub summary, local repo scan | Works (`.[github]` extra). | `integrations/` |
 | Background daemon | launchd, systemd user unit and Task Scheduler. | `platform/daemon_*.py` |
-| Encrypted database | Only with the `.[encrypted]` extra. The default install is **plain SQLite**. | `db/connection.py` |
+| Encrypted database | Only with SQLCipher installed (the `.[encrypted]` extra is Linux-only). The default install is **plain SQLite**; `privacy encrypt` converts an existing one. | `db/connection.py` |
 | Idle detection | Works on macOS (checked). Windows and X11 (`xprintidle`) written, not yet run; none on Wayland. | `platform/idle.py` |
 | Procrastination engine | **Not wired in.** Unit-tested, never called. | `core/pattern_engine.py` |
 | 90-day retention | Works while the tracker runs: checked once a day, old rows summarised then deleted. | `core/retention.py` |
@@ -86,7 +86,7 @@ name. Install from source:
 ```bash
 git clone https://github.com/Dhruv-Sharma29/FocusGuard.git && cd FocusGuard
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[encrypted]"        # add ai, github or dev as needed: ".[encrypted,ai,github]"
+pip install -e .                     # extras: ".[ai,github]"; encryption: see start.md § 1
 focusguard start                     # foreground; Ctrl+C to stop
 focusguard report                    # in another terminal
 ```
@@ -107,7 +107,7 @@ account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ```bash
 pip install -e ".[dev]"
-pytest                    # 145 tests, ~73% line coverage; every command has a smoke test
+pytest                    # 153 tests, ~72% line coverage; every command has a smoke test
 ruff check src tests      # clean; enforced in CI
 mypy src                  # strict, clean; enforced in CI
 python scripts/screenshots.py   # regenerate docs/images/

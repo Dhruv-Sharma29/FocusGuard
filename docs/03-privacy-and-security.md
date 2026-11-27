@@ -39,7 +39,13 @@ first use and stored in the keyring under service `focusguard`, name `db_encrypt
   database can't be decrypted.
 - On headless Linux without a Secret Service, keyring calls fail and the tracker can't open the
   encrypted DB [verify].
-- Switching from plain to encrypted needs a fresh database. See [05](05-known-issues.md) #10.
+- A plain database is detected by its `SQLite format 3` header and keeps opening unencrypted, with
+  a warning, until `privacy encrypt` converts it (copy with `sqlcipher_export`, compare every
+  table's row count, then replace). v0.1.0 keyed it anyway and every query failed
+  ([05](05-known-issues.md) #10). The round trip is tested against real SQLCipher in the
+  `encrypted` CI job.
+- `sqlcipher3-binary` ships Linux x86_64 wheels only, so the `encrypted` extra can't install on
+  macOS or Windows.
 
 ## What reaches an LLM
 
@@ -59,8 +65,9 @@ App names can contain title text on Windows/Linux, so they go through the blockl
 
 ## Gaps, ranked
 
-1. **Unencrypted by default.** Either make SQLCipher a core dependency or have `start` refuse to
-   run unencrypted without an explicit `--allow-plaintext`.
+1. **Unencrypted by default.** Making SQLCipher a core dependency would break installs on macOS
+   and Windows (no wheels). The remaining option is to have `start` refuse to run unencrypted
+   without an explicit `--allow-plaintext`. Not decided yet ([06](06-improvement-plan.md) Phase 3).
 2. **Substring blocklist.** Over-redacts common words, and nothing redacts unlisted sensitive sites.
    Whole-word matching fixes the first. For the second, consider an allowlist mode for titles
    (store titles only for categorised coding/docs apps).
