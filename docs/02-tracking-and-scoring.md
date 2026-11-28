@@ -23,8 +23,8 @@ dependencies:
 | OS | Source | Checked |
 | --- | --- | --- |
 | macOS | `ioreg -c IOHIDSystem` → `HIDIdleTime` (nanoseconds) | Yes |
-| Windows | `ctypes.windll.user32.GetLastInputInfo` vs `GetTickCount` | [verify] |
-| Linux X11 | `xprintidle` if installed | [verify] |
+| Windows | `ctypes.windll.user32.GetLastInputInfo` vs `GetTickCount` | [verify]: real-call test added for the Windows CI runners |
+| Linux X11 | `xprintidle` if installed | [verify]: real-call test added, runs under `xvfb` in CI |
 | Wayland, or any failure | none: the tick counts as not idle | — |
 
 v0.1.0 had a stub here that always said "not idle", so an hour away from a focused editor logged an
@@ -36,11 +36,21 @@ Keywords match **whole words**, case-insensitively: `zed` matches "Zed" but not 
 A keyword that starts or ends with punctuation (`.py`) is only guarded on its letter side, so
 `.py` still matches `main.py`.
 
+0. Your own rules from `focusguard label PATTERN CATEGORY` (`[tracker.labels]`), matched against
+   app name and title, longest pattern first. They beat everything below.
 1. Match the **app name**. If it lands in any category other than `browser`, that's the answer:
    "Visual Studio Code" is coding even with `docs/README.md` open.
-2. Otherwise (a browser, or an app no keyword knows) match the **title**, checking categories in
-   the order `documentation` → `entertainment` → `coding` → the rest in dict order.
-3. No title match: the app's own category (`browser`), else `other`.
+2. Otherwise (a browser, or an app no keyword knows) look at the **site named in the title's
+   suffix**: the title is split on ` - `, ` — `, ` | `, ` · `, a trailing browser name is skipped,
+   and the last remaining segment after the first is matched. "How do I parse YouTube URLs? -
+   Stack Overflow" is coding, not entertainment. One exception: if the site is entertainment but
+   the whole title matches documentation, documentation wins ("Python tutorial - YouTube").
+3. No site match: match the whole **title**, checking categories in the order `documentation` →
+   `entertainment` → `coding` → the rest in dict order.
+4. No title match: the app's own category (`browser`), else `other`.
+
+Labels and site rules are Phase 5 of [06](06-improvement-plan.md). Whether site rules raise
+precision is unmeasured until you run `eval classifier` on labelled titles.
 
 Documentation goes before entertainment so "Python tutorial - YouTube" counts as learning.
 Entertainment goes before coding so "Next.js drama - Twitter" doesn't. Keyword lists are in
@@ -92,7 +102,7 @@ averages more than 5 points higher, ↓ if more than 5 lower, else →.
 writes an `hourly` row (last 60 minutes). Each tick re-reads all of today's activity rows to compute
 the score. That's cheap at 60 s polling, but it grows with the poll rate and the length of the day.
 
-## Procrastination engine (`core/pattern_engine.py`), not wired in
+## Procrastination engine (`core/pattern_engine.py`)
 
 Meant to flag compound patterns rather than "YouTube = bad". `detect_procrastination()` builds an
 `ActivityContext` from the DB and sums the weights of the signals that fire. At ≥ 0.6 it counts as
@@ -100,23 +110,29 @@ procrastinating.
 
 | Signal | Weight | Fires when |
 | --- | --- | --- |
-| `goal_set_no_progress` | 0.30 | active goal, 0 coding minutes in the last hour |
+| `goal_set_no_progress` | 0.30 | active goal, 0 coding or documentation minutes in the last hour |
 | `excessive_app_switching` | 0.20 | > 10 distinct apps in the last 30 min |
 | `long_entertainment` | 0.40 | > 30 entertainment minutes in the last hour |
 | `zero_git_activity` | 0.10 | no commits today, goal older than 2 h |
 | `high_distraction_ratio` | 0.25 | distraction > coding and > 15 min in the last hour |
 | `known_slump_hour` | 0.10 | this hour's 30-day average hourly score is > 10 below the mean |
-| `long_idle_with_goal` | 0.35 | goal older than 1 h, < 5 coding and < 5 entertainment minutes in the last hour |
+| `long_idle_with_goal` | 0.35 | goal older than 1 h, < 5 non-idle minutes of any kind in the last hour |
 
-**Not called anywhere in the app**, only in `tests/test_pattern_engine.py`. No command shows its
-result, and the tracker never triggers a nudge from it. Two things to settle before wiring it in:
+**Shown on `focusguard report`** as a one-line "Procrastination check · last hour · unvalidated"
+panel: the score, the 60% threshold, and the signals that fired. It doesn't trigger nudges.
 
-- **It contradicts its own goal.** An hour reading docs in a browser with a goal set fires
-  `goal_set_no_progress` (0.30) and `long_idle_with_goal` (0.35) = 0.65 → "procrastinating".
-  That's exactly the false positive the module's docstring says it avoids. `coding_minutes_last_hour`
-  only counts `coding` + `documentation` rows, so browser-category research reads as nothing.
-- **`zero_git_activity` can never be false** while `git_activity` stays empty, so it adds 0.10 to
-  every goal older than 2 hours.
+- **Fixed: browser research with a goal.** v0.1.0's `long_idle_with_goal` counted only coding and
+  entertainment minutes, so an hour of research in the `browser` category looked idle: 0.30 + 0.35
+  = 0.65, flagged. It now counts every non-idle minute, and the same hour scores 0.40
+  (`goal_set_no_progress` + `zero_git_activity`).
+- **`zero_git_activity` always fires without `[github] tracked_repos`**, since there are no
+  commits to see. It adds 0.10 to every goal older than 2 hours.
+- **With no goal, entertainment alone flags.** `long_entertainment` + `high_distraction_ratio` =
+  0.65. Whether an evening of YouTube with no goal should count is a judgment your labels should
+  make.
 
-Unit tests cover the arithmetic of each signal. None of them check that the weights give sensible
-verdicts on realistic days. That needs a handful of labelled day-profiles (see [00](00-charter.md)).
+`tests/test_pattern_engine.py::test_hour_profiles` pins the verdict on eight synthetic hours
+(coding, browser research, docs, a YouTube binge, away from the desk, tab-hopping, entertainment
+with no goal, a short break). Those are hours I wrote with the answer chosen in advance. They
+check the rules do what they say, not that the rules are right. The real check is still Phase 6's:
+your own labelled hours.

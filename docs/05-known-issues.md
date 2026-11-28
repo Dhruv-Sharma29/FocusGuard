@@ -60,10 +60,11 @@ Test: `test_blocklisted_app_name_is_redacted`.
 
 ## Medium
 
-### 7. Procrastination engine isn't connected
-`core/pattern_engine.py` is tested but never called. It also flags an hour of reading docs in a
-browser with a goal set as procrastination (0.30 + 0.35 ≥ 0.6),
-see [02](02-tracking-and-scoring.md#procrastination-engine-corepattern_enginepy-not-wired-in).
+### 7. Procrastination engine isn't connected — **fixed**
+v0.1.0 never called `core/pattern_engine.py`, and it flagged an hour of browser research with a
+goal set (0.30 + 0.35 ≥ 0.6). `report` now shows its verdict and the signals that fired, and the
+idle signal counts every active minute, so that hour scores 0.40. The weights are still
+unvalidated; see [02](02-tracking-and-scoring.md#procrastination-engine-corepattern_enginepy).
 
 ### 8. Git activity is never recorded — **fixed**
 In v0.1.0 nothing wrote `git_activity`, so "Commits" was always 0, `zero_git_activity` always fired,

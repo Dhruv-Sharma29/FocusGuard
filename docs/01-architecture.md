@@ -33,7 +33,7 @@ src/focusguard/
 ├── core/
 │   ├── tracker.py         Poll loop, classification, PID file
 │   ├── scorer.py          Focus score, decay, trend, snapshots
-│   ├── pattern_engine.py  Weighted procrastination signals (not wired in)
+│   ├── pattern_engine.py  Weighted procrastination signals (shown on `report`)
 │   ├── retention.py       Aggregate-then-delete old rows; prunes session scores
 │   └── evaluation.py      Spearman, score validity, classifier precision/recall
 ├── db/

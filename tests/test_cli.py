@@ -77,3 +77,22 @@ def test_service_launch_exits_cleanly_when_tracker_running(config_file):
 
     with patch("focusguard.core.tracker.is_tracker_running", return_value=True):
         assert runner.invoke(app, ["start", "--daemon-mode"]).exit_code == 0
+
+
+def test_label_add_list_remove(config_file):
+    assert runner.invoke(app, ["label", "Figma", "coding"]).exit_code == 0
+    assert cfg.load_config().tracker.labels == {"figma": "coding"}
+    assert "figma" in runner.invoke(app, ["label"]).output
+
+    from focusguard.commands.evaluate import _classifier
+    assert _classifier()("Figma", "Landing page") == "coding"
+
+    assert runner.invoke(app, ["label", "figma", "--remove"]).exit_code == 0
+    assert cfg.load_config().tracker.labels == {}
+    assert runner.invoke(app, ["label", "figma", "--remove"]).exit_code == 1
+
+
+def test_label_rejects_unknown_category(config_file):
+    assert runner.invoke(app, ["label", "figma", "design"]).exit_code == 1
+    assert runner.invoke(app, ["label", "figma", "browser"]).exit_code == 1
+    assert cfg.load_config().tracker.labels == {}

@@ -25,14 +25,15 @@ aims for the middle: one sample a minute of *which app and window title is in fr
 redacted against a blocklist before they touch disk, stored locally, scored locally. What makes it
 more than a logger is the scoring layer: a decayed productive-time ratio, and a weighted-signal
 procrastination engine meant to tell "reading docs in a browser" from "drifting". Logging,
-scoring, the UI, idle detection and retention work. The engine isn't wired in yet
-([05](05-known-issues.md)), and the classifier is still the weakest link: the score is only as
-honest as the category each sample gets.
+scoring, the UI, idle detection and retention work. The engine is shown on `report` but its
+weights are unvalidated ([02](02-tracking-and-scoring.md)), and the classifier is still the weakest
+link: the score is only as honest as the category each sample gets.
 
 ## Status
 
 v0.1.0 plus unreleased work on `main`: a CI workflow (Linux, macOS, Windows × Python 3.10, 3.12)
-and fixes for 05 #1–6, 8, 9, 10, 12, 13 and most low items, plus the Phase 4 tools and commit logging. 169 tests, run in CI on Linux, macOS
+and fixes for 05 #1–10, 12, 13 and most low items, plus the Phase 4 tools, commit logging,
+`focusguard label`, site rules and the engine on `report`. 188 tests, run in CI on Linux, macOS
 and Windows (Python 3.10 and 3.12), with the SQLCipher round trip in a separate Linux job; ruff and strict mypy are clean. Line coverage is about 75%; the
 daemon installers and the network clients are the least tested.
 Findings in these docs come from reading the code and running it on macOS on 2026-11-26. Windows and

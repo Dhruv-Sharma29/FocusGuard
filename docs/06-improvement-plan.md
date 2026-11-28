@@ -72,20 +72,32 @@ With 14 days, a Spearman ρ needs to be above roughly 0.54 to be distinguishable
 the usual 5% level [verify against a critical-value table], so treat small differences between the
 two ρ values as noise.
 
-## Phase 5 — classification v2 (only if Phase 4 shows it's needed)
+## Phase 5 — classification v2
+
+Built ahead of Phase 4's numbers because you asked for it; the second row's check still needs them.
 
 | Change | Done when |
 | --- | --- |
-| `focusguard label <pattern> <category>`: user overrides, checked before defaults | Corrected titles reclassify; CLI test |
-| Site rules from the browser title suffix (`… - YouTube`, `… - GitHub`) before keywords | Precision on the labelled set improves over Phase 4's numbers |
+| ✅ `focusguard label <pattern> <category>`: user overrides, checked before defaults | ✅ Corrected titles reclassify in the tracker and `eval`; CLI test. Past rows keep their category |
+| ✅ Site rules from the browser title suffix (`… - Stack Overflow`, `… - Reddit`) before title keywords | **Not yet**: precision on your labelled set must beat the keyword-only numbers. To compare, run `eval classifier` on this commit and on `73a321d` |
 
 ## Phase 6 — features the README used to promise
 
 | Change | Depends on | Done when |
 | --- | --- | --- |
 | ✅ Log commits from `[github] tracked_repos` hourly | — | Dashboard "Commits" and the week table show real per-day counts |
-| Wire the procrastination engine into `report`, with the signals that fired | Phases 4–5 | On 10 hand-labelled day-profiles it agrees with the labels in ≥ 8 |
-| Re-weight so browser research with a goal isn't flagged | the day-profiles | The "reading docs" profile scores < 0.6 |
+| ✅ Wire the procrastination engine into `report`, with the signals that fired | Phases 4–5 | **Wired in; check not done.** Agreement on 10 of *your* labelled hours (≥ 8) still to measure. The 8 synthetic hours in `test_hour_profiles` only pin behaviour |
+| ✅ Re-weight so browser research with a goal isn't flagged | — | ✅ The browser-research profile scores 0.40 (was 0.65); `test_browser_research_scores_below_threshold` |
+
+## Open [verify] items
+
+| Claim | Check | State |
+| --- | --- | --- |
+| Windows idle (`GetLastInputInfo`) | `tests/test_platform.py`, Windows CI runners | Added, not yet run (needs a push) |
+| X11 idle (`xprintidle`) | Same file, `encrypted` job under `xvfb` | Added, not yet run |
+| Windows config/data paths in start.md § 8 | Same file, compares with `platformdirs` | Added, not yet run |
+| macOS SQLCipher via `brew` + `sqlcipher3` | `encrypted-macos` CI job, non-blocking | Added, not yet run |
+| Fine-grained GitHub token is enough | Needs a real token | Yours to try |
 
 ## Not planned
 

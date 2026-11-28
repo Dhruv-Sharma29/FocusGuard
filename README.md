@@ -6,9 +6,9 @@ personality-mode nudges and an optional AI coach (Ollama locally, or OpenAI).
 
 > **Status:** alpha (v0.1.0). The tracker, dashboard, reports, goals, personality modes, AI coach,
 > GitHub summary, per-OS daemons, idle detection, 90-day retention and commit counting work. The
-> **procrastination engine is written and unit-tested but not yet called by the app**, and
-> classification is keyword-based, so some titles will land in the wrong category. See
-> [Known issues](docs/05-known-issues.md) before trusting a score.
+> **procrastination check on `report` uses hand-set weights nobody has validated yet**, and
+> classification is keyword-based, so some titles will land in the wrong category (`focusguard
+> label` corrects them). See [Known issues](docs/05-known-issues.md) before trusting a score.
 
 ![FocusGuard dashboard](docs/images/report.svg)
 
@@ -61,7 +61,7 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | --- | --- | --- |
 | Active-window polling (macOS, Windows, Linux X11) | Works. macOS needs Accessibility permission. | `platform/window.py` |
 | Sensitive-title redaction | Works on window titles and app names. Substring match, so it over-redacts. | `security/blocklist.py` |
-| App classification | Whole-word keywords; app name first, then title for browsers. Keyword-based, so not exact. | `core/tracker.py` |
+| App classification | Your `label` rules, then app name, then the site in a browser title's suffix, then title keywords. Not exact. | `core/tracker.py`, `commands/label.py` |
 | Focus score with time decay | Works. Only as good as the classifier feeding it. | `core/scorer.py` |
 | Dashboard, `stats`, week/month report | Works. "Commits" counts your commits in `[github] tracked_repos`. | `ui/` |
 | Goals | Works. | `commands/goal.py` |
@@ -71,8 +71,8 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | GitHub summary, local repo scan | Works (`.[github]` extra). | `integrations/` |
 | Background daemon | launchd, systemd user unit and Task Scheduler. | `platform/daemon_*.py` |
 | Encrypted database | Only with SQLCipher installed (the `.[encrypted]` extra is Linux-only). The default install is **plain SQLite**; `privacy encrypt` converts an existing one. | `db/connection.py` |
-| Idle detection | Works on macOS (checked). Windows and X11 (`xprintidle`) written, not yet run; none on Wayland. | `platform/idle.py` |
-| Procrastination engine | **Not wired in.** Unit-tested, never called. | `core/pattern_engine.py` |
+| Idle detection | Works on macOS (checked). Windows and X11 (`xprintidle`): real-call tests added to CI; none on Wayland. | `platform/idle.py` |
+| Procrastination engine | Shown on `report` with the signals that fired. **Weights unvalidated.** | `core/pattern_engine.py` |
 | 90-day retention | Works while the tracker runs: checked once a day, old rows summarised then deleted. | `core/retention.py` |
 | Git commit logging | Works: tracker reads `git log` hourly for `tracked_repos`; SHA and time only. | `core/tracker.py` |
 
@@ -112,7 +112,7 @@ account: [docs/03-privacy-and-security.md](docs/03-privacy-and-security.md).
 
 ```bash
 pip install -e ".[dev]"
-pytest                    # 169 tests, ~75% line coverage; every command has a smoke test
+pytest                    # 188 tests, ~75% line coverage; every command has a smoke test
 ruff check src tests      # clean; enforced in CI
 mypy src                  # strict, clean; enforced in CI
 python scripts/screenshots.py   # regenerate docs/images/

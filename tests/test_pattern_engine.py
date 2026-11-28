@@ -1,5 +1,7 @@
 """Tests for the smart procrastination detection engine."""
 
+import pytest
+
 from focusguard.core.pattern_engine import (
     PROCRASTINATION_THRESHOLD,
     ActivityContext,
@@ -18,6 +20,7 @@ class TestDetectProcrastination:
             hours_since_goal_set=0.0,
             coding_minutes_last_hour=30.0,
             coding_minutes_today=120.0,
+            active_minutes_last_hour=40.0,
             distraction_minutes_last_hour=5.0,
             entertainment_minutes_last_hour=5.0,
             unique_apps_last_30min=3,
@@ -144,3 +147,47 @@ class TestDetectionSummary:
         summary = get_detection_summary(result)
         assert "70%" in summary
         assert "Signals:" in summary
+
+
+# Synthetic hour profiles with the verdict each one should get. They pin the engine's
+# behaviour; they are NOT the Phase 4 validation, which needs your own labelled days.
+_GOAL = dict(has_active_goal=True, hours_since_goal_set=3.0, git_commits_today=0)
+PROFILES = [
+    ("coding with a goal", dict(_GOAL, coding_minutes_last_hour=50,
+                                active_minutes_last_hour=55), False),
+    ("browser research, no keyword matched", dict(_GOAL, coding_minutes_last_hour=0,
+                                                  active_minutes_last_hour=50), False),
+    ("reading docs", dict(_GOAL, coding_minutes_last_hour=45,
+                          active_minutes_last_hour=50), False),
+    ("YouTube binge with a goal", dict(_GOAL, coding_minutes_last_hour=0,
+                                       entertainment_minutes_last_hour=45,
+                                       distraction_minutes_last_hour=45,
+                                       active_minutes_last_hour=50), True),
+    ("away from the desk with a goal", dict(_GOAL, coding_minutes_last_hour=0,
+                                            active_minutes_last_hour=0), True),
+    ("tab-hopping, no work", dict(_GOAL, coding_minutes_last_hour=0, unique_apps_last_30min=14,
+                                  distraction_minutes_last_hour=20,
+                                  entertainment_minutes_last_hour=20,
+                                  active_minutes_last_hour=50), True),
+    # Debatable: entertainment signals alone (0.4 + 0.25) flag it even with no goal set.
+    # Pinned as current behaviour; your own labelled days should decide it.
+    ("entertainment, no goal", dict(entertainment_minutes_last_hour=50,
+                                    distraction_minutes_last_hour=50,
+                                    active_minutes_last_hour=50), True),
+    ("short break while coding", dict(_GOAL, coding_minutes_last_hour=40,
+                                      entertainment_minutes_last_hour=10,
+                                      distraction_minutes_last_hour=10,
+                                      active_minutes_last_hour=55), False),
+]
+
+
+@pytest.mark.parametrize(("name", "fields", "expected"), PROFILES, ids=[p[0] for p in PROFILES])
+def test_hour_profiles(name, fields, expected):
+    result = detect_procrastination(ActivityContext(**fields))
+    assert result.is_procrastinating is expected, (name, result.score)
+
+
+def test_browser_research_scores_below_threshold():
+    """v0.1.0 scored this 0.65 (goal_set_no_progress + long_idle_with_goal) and flagged it."""
+    ctx = ActivityContext(**PROFILES[1][1])
+    assert detect_procrastination(ctx).score < PROCRASTINATION_THRESHOLD

@@ -210,9 +210,13 @@ openai_model = "gpt-4o-mini"
 # Define every category you want (coding, documentation, entertainment, browser, communication).
 # Keywords match whole words: the app name first, then the window title for browsers.
 coding = ["code", "pycharm", "terminal", "iterm", "xcode", "cursor"]
+
+[tracker.labels]
+# Written by `focusguard label PATTERN CATEGORY`; checked before everything above.
+"rust book" = "documentation"
 ```
 
-`coach enable`, `coach disable`, `coach mode` and `privacy blocklist add/remove` rewrite the whole file with every current value filled in.
+`coach enable`, `coach disable`, `coach mode`, `label` and `privacy blocklist add/remove` rewrite the whole file with every current value filled in.
 
 ## 9. Uninstall
 

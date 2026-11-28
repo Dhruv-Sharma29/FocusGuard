@@ -16,6 +16,7 @@ from rich.table import Table
 from rich.text import Text
 
 from focusguard.config import load_config
+from focusguard.core.pattern_engine import PROCRASTINATION_THRESHOLD, detect_procrastination
 from focusguard.core.scorer import (
     calculate_focus_score,
     get_score_emoji,
@@ -49,12 +50,14 @@ def render_dashboard() -> None:
     git_commits = queries.get_git_commits_today()
     active_goals = queries.get_active_goals()
     tracker_running = is_tracker_running()
+    check = detect_procrastination()
 
     # ── Build layout ─────────────────────────────────────────────────────
     layout = Layout()
     layout.split_column(
         Layout(name="header", size=3),
         Layout(name="body"),
+        Layout(name="check", size=3),
         # Panel (2) + table borders, header and separator (4) + one line per row.
         Layout(name="footer", size=max(len(top_distractions), 1) + 6),
     )
@@ -219,6 +222,21 @@ def render_dashboard() -> None:
         border_style=theme.border,
     )
     layout["footer"].update(footer_content)
+
+    # ── Procrastination check (last hour) ─────────────────────────────────
+    color = theme.danger if check.is_procrastinating else theme.success
+    fired = "; ".join(s.description for s in check.triggered_signals) or "no signals fired"
+    check_text = Text.from_markup(
+        f"[bold {color}]{check.score:.0%}[/bold {color}]"
+        f" [dim](flags at {PROCRASTINATION_THRESHOLD:.0%})[/dim]  {fired}",
+        overflow="ellipsis",
+    )
+    check_text.no_wrap = True
+    layout["check"].update(Panel(
+        check_text,
+        title=f"[{theme.primary}]Procrastination check · last hour · unvalidated[/{theme.primary}]",
+        border_style=theme.border,
+    ))
 
     # ── Render ───────────────────────────────────────────────────────────
     console.print(layout)

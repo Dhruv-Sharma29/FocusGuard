@@ -15,6 +15,7 @@ defaults. Behaviour notes flag where a command doesn't do what its output says.
 | `focusguard stop` | SIGTERM the tracker from the PID file, wait up to 5 s. |
 | `focusguard stats` | One line: score, trend, coding and distraction time today, since the first activity today. |
 | `focusguard report` | Full dashboard for today. |
+| `focusguard label PATTERN CATEGORY` | Classify anything whose app name or title contains PATTERN (whole words) as CATEGORY, before the built-in rules. `--remove` deletes a rule; no arguments lists them. Saved to `[tracker.labels]`; a running tracker picks it up on restart; `eval` uses it at once. Past rows keep their category. |
 | `focusguard report -p week` · `-p month` | Per-day table for the last 7 / 30 days, including commits per day (from `[github] tracked_repos`) and your rating. |
 
 ![focusguard report -p week](images/report-week.svg)

@@ -53,6 +53,7 @@ def test_stats_and_reports(sample_activity, sample_goals):
         result = run(*args)
         assert result.exit_code == 0, (args, result.output)
     assert run("report", "-p", "year").exit_code == 1
+    assert "Procrastination check" in run("report").output
 
 
 def test_start_foreground_runs_tracker():

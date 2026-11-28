@@ -31,8 +31,10 @@ class ActivityContext:
     goal_description: str = ""
     hours_since_goal_set: float = 0.0
 
-    coding_minutes_last_hour: float = 0.0
+    coding_minutes_last_hour: float = 0.0  # coding + documentation, like the score
     coding_minutes_today: float = 0.0
+    # Any non-idle minutes, including uncategorised browsing (research without a keyword).
+    active_minutes_last_hour: float = 0.0
     distraction_minutes_last_hour: float = 0.0
     entertainment_minutes_last_hour: float = 0.0
 
@@ -62,7 +64,7 @@ class ProcrastinationSignal:
 SIGNALS: list[ProcrastinationSignal] = [
     ProcrastinationSignal(
         name="goal_set_no_progress",
-        description="Active goal exists but no coding in the last hour",
+        description="Active goal exists but no coding or docs in the last hour",
         weight=0.3,
         check=lambda ctx: ctx.has_active_goal and ctx.coding_minutes_last_hour == 0,
     ),
@@ -107,10 +109,11 @@ SIGNALS: list[ProcrastinationSignal] = [
         name="long_idle_with_goal",
         description="Goal set but almost no activity at all in the last hour",
         weight=0.35,
+        # Uses all active minutes: v0.1.0 counted only coding + entertainment, so an
+        # hour of browser research with a goal set looked idle and was flagged (0.65).
         check=lambda ctx: (
             ctx.has_active_goal
-            and ctx.coding_minutes_last_hour < 5
-            and ctx.entertainment_minutes_last_hour < 5
+            and ctx.active_minutes_last_hour < 5
             and ctx.hours_since_goal_set > 1
         ),
     ),
@@ -159,6 +162,7 @@ def build_context() -> ActivityContext:
     # Activity stats
     coding_last_hour = queries.get_coding_minutes(one_hour_ago, now)
     coding_today = queries.get_coding_minutes(today_start, now)
+    active_last_hour = queries.get_total_active_minutes(one_hour_ago, now)
     distraction_last_hour = queries.get_distraction_minutes(one_hour_ago, now)
     entertainment_last_hour = queries.get_entertainment_minutes_since(one_hour_ago)
     unique_apps = queries.get_unique_apps_since(thirty_min_ago)
@@ -177,6 +181,7 @@ def build_context() -> ActivityContext:
         hours_since_goal_set=hours_since_goal,
         coding_minutes_last_hour=coding_last_hour,
         coding_minutes_today=coding_today,
+        active_minutes_last_hour=active_last_hour,
         distraction_minutes_last_hour=distraction_last_hour,
         entertainment_minutes_last_hour=entertainment_last_hour,
         unique_apps_last_30min=unique_apps,

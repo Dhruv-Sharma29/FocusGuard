@@ -141,3 +141,31 @@ def test_blocklisted_app_name_is_redacted():
         tracker._poll_tick()
     assert log.call_args.kwargs["app_name"] == "[private]"
     assert log.call_args.kwargs["window_title"] == "[private]"
+
+
+class TestSiteSuffixAndLabels:
+    def setup_method(self):
+        self.tracker = _tracker_with_defaults()
+
+    def test_site_suffix_beats_title_keywords(self):
+        title = "How do I parse YouTube URLs in Python? - Stack Overflow - Google Chrome"
+        assert self.tracker._classify_app("Google Chrome", title) == "coding"
+
+    def test_learning_on_entertainment_site_stays_documentation(self):
+        title = "Rust tutorial - YouTube"
+        assert self.tracker._classify_app("Google Chrome", title) == "documentation"
+
+    def test_unknown_site_falls_back_to_keywords(self):
+        title = "Notes on GitHub Actions caching - Some Blog"
+        assert self.tracker._classify_app("Firefox", title) == "coding"
+
+    def test_label_overrides_everything(self):
+        from focusguard.config import FocusGuardConfig
+
+        config = FocusGuardConfig()
+        config.tracker.labels = {"figma": "coding", "rust book": "documentation"}
+        with patch("focusguard.core.tracker.load_config", return_value=config):
+            tracker = ActivityTracker()
+        assert tracker._classify_app("Figma", "Landing page") == "coding"
+        assert tracker._classify_app("Google Chrome", "The Rust Book - YouTube") == "documentation"
+        assert tracker._classify_app("Google Chrome", "Cats - YouTube") == "entertainment"

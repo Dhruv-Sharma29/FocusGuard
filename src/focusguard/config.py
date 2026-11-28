@@ -50,7 +50,7 @@ class TrackerConfig:
             "warp", "alacritty", "kitty", "hyper", "xcode", "android studio",
             "cursor", "zed", "electron",
             ".py", ".md", ".json", ".js", ".ts", ".rs", ".go", ".html", ".css",
-            "leetcode", "github", "stackoverflow",
+            "leetcode", "github", "stackoverflow", "stack overflow",
         ],
         "browser": [
             "chrome", "firefox", "safari", "brave", "edge", "arc", "opera", "vivaldi",
@@ -70,6 +70,8 @@ class TrackerConfig:
             # No bare topics ("python", "react"): they made "Python memes - Reddit" documentation.
         ],
     })
+    # `focusguard label`: pattern -> category, checked before everything else.
+    labels: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass

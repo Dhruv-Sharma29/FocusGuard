@@ -43,6 +43,9 @@ console = Console(stderr=True)
 # so that "Python tutorial - YouTube" counts as learning.
 _PRIORITY = ("documentation", "entertainment", "coding")
 
+# Browser titles end in "page - site [- browser]"; split on the usual separators.
+_TITLE_SEPARATORS = re.compile(r"\s+[-–—|·]\s+")
+
 
 def _keyword_pattern(keywords: list[str]) -> re.Pattern[str] | None:
     """One regex matching any keyword as a whole word.
@@ -83,6 +86,13 @@ class ActivityTracker:
         order += [c for c in categories if c not in _PRIORITY]
         self._patterns = [
             (cat, pat) for cat in order if (pat := _keyword_pattern(categories[cat]))
+        ]
+        # `focusguard label` overrides, longest first so the most specific wins.
+        labels = self._config.tracker.labels
+        self._labels = [
+            (labels[k], pat)
+            for k in sorted(labels, key=len, reverse=True)
+            if (pat := _keyword_pattern([k]))
         ]
 
     def start(self, daemon_mode: bool = False) -> None:
@@ -193,15 +203,36 @@ class ActivityTracker:
     def _classify_app(self, app_name: str, title: str | None) -> str:
         """Classify an application into a productivity category.
 
-        The app name decides first ("Visual Studio Code" is coding whatever
-        file is open). Browsers, and apps no keyword matches, are decided by
-        the window title, so "YouTube" in Chrome is entertainment. Keywords
-        match whole words only.
+        1. Your `focusguard label` overrides, matched against app name and title.
+        2. The app name ("Visual Studio Code" is coding whatever file is open).
+        3. For browsers and unmatched apps: the site named at the end of the
+           title ("… - Stack Overflow"), except that learning on an
+           entertainment site ("Python tutorial - YouTube") stays documentation.
+        4. Keywords anywhere in the title.
+        Keywords match whole words only.
         """
+        for cat, pat in self._labels:
+            if pat.search(app_name.lower()) or pat.search((title or "").lower()):
+                return cat
         app_category = self._match(app_name)
         if app_category and app_category != "browser":
             return app_category
-        return self._match(title) or app_category or "other"
+        title_category = self._match(title)
+        site_category = self._site_category(title)
+        if site_category and not (
+            site_category == "entertainment" and title_category == "documentation"
+        ):
+            return site_category
+        return title_category or app_category or "other"
+
+    def _site_category(self, title: str | None) -> str | None:
+        """Category of the site named in the title's suffix, skipping a trailing browser name."""
+        parts = _TITLE_SEPARATORS.split(title or "")
+        for part in reversed(parts[1:]):
+            category = self._match(part)
+            if category != "browser":
+                return category
+        return None
 
     def _match(self, text: str | None) -> str | None:
         text = (text or "").lower()
