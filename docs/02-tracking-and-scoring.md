@@ -23,8 +23,8 @@ dependencies:
 | OS | Source | Checked |
 | --- | --- | --- |
 | macOS | `ioreg -c IOHIDSystem` → `HIDIdleTime` (nanoseconds) | Yes |
-| Windows | `ctypes.windll.user32.GetLastInputInfo` vs `GetTickCount` | [verify]: real-call test added for the Windows CI runners |
-| Linux X11 | `xprintidle` if installed | [verify]: real-call test added, runs under `xvfb` in CI |
+| Windows | `ctypes.windll.user32.GetLastInputInfo` vs `GetTickCount` | The call returns a reading on the Windows CI runners (CI run 46142584338); not yet tried on a desktop |
+| Linux X11 | `xprintidle` if installed | The call returns a reading under `xvfb` in CI (CI run 46142584338); not yet tried on a desktop |
 | Wayland, or any failure | none: the tick counts as not idle | — |
 
 v0.1.0 had a stub here that always said "not idle", so an hour away from a focused editor logged an

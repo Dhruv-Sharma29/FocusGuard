@@ -93,10 +93,11 @@ Built ahead of Phase 4's numbers because you asked for it; the second row's chec
 
 | Claim | Check | State |
 | --- | --- | --- |
-| Windows idle (`GetLastInputInfo`) | `tests/test_platform.py`, Windows CI runners | Added, not yet run (needs a push) |
-| X11 idle (`xprintidle`) | Same file, `encrypted` job under `xvfb` | Added, not yet run |
-| Windows config/data paths in start.md § 8 | Same file, compares with `platformdirs` | Added, not yet run |
-| macOS SQLCipher via `brew` + `sqlcipher3` | `encrypted-macos` CI job, non-blocking | Added, not yet run |
+| Windows idle (`GetLastInputInfo`) | `tests/test_platform.py`, Windows CI runners | ✅ Passed (CI run 46142584338). A walk-away test on a real Windows desktop is still worth doing |
+| X11 idle (`xprintidle`) | Same file, `encrypted` job under `xvfb` | ✅ Passed (CI run 46142584338) |
+| Windows config/data paths in start.md § 8 | Same file, compares with `platformdirs` | ✅ Passed (CI run 46142584338) |
+| macOS SQLCipher via `brew` + `sqlcipher3` | `encrypted-macos` CI job, non-blocking | ✅ Passed, including the encrypt round trip (CI run 46142584338) |
+| SQLCipher on Windows | Not tried | Open |
 | Fine-grained GitHub token is enough | Needs a real token | Yours to try |
 
 ## Not planned

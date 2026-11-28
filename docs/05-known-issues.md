@@ -30,7 +30,7 @@ Still possible: `course` matches "Of course I quit - YouTube" (documentation).
 ### 2. Idle time counts as work — **fixed**
 In v0.1.0 `_check_idle()` returned `False`, so an unattended editor logged coding time all night.
 It now compares per-OS seconds-since-last-input (`platform/idle.py`) with `idle_threshold`. Checked
-on macOS by running the real tracker; Windows and X11 are [verify], and Wayland has no source yet
+on macOS by running the real tracker; on Windows and X11 the OS call works in CI, and Wayland has no source yet
 ([02](02-tracking-and-scoring.md#idle-detection)).
 
 ### 3. Retention never runs; score rows grow forever — **fixed**

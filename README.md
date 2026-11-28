@@ -71,7 +71,7 @@ Module map, schema and design rules: [docs/01-architecture.md](docs/01-architect
 | GitHub summary, local repo scan | Works (`.[github]` extra). | `integrations/` |
 | Background daemon | launchd, systemd user unit and Task Scheduler. | `platform/daemon_*.py` |
 | Encrypted database | Only with SQLCipher installed (the `.[encrypted]` extra is Linux-only). The default install is **plain SQLite**; `privacy encrypt` converts an existing one. | `db/connection.py` |
-| Idle detection | Works on macOS (checked). Windows and X11 (`xprintidle`): real-call tests added to CI; none on Wayland. | `platform/idle.py` |
+| Idle detection | Works on macOS (checked). Windows and X11 (`xprintidle`): the OS call works in CI; none on Wayland. | `platform/idle.py` |
 | Procrastination engine | Shown on `report` with the signals that fired. **Weights unvalidated.** | `core/pattern_engine.py` |
 | 90-day retention | Works while the tracker runs: checked once a day, old rows summarised then deleted. | `core/retention.py` |
 | Git commit logging | Works: tracker reads `git log` hourly for `tracked_repos`; SHA and time only. | `core/tracker.py` |
@@ -93,8 +93,8 @@ focusguard report                    # in another terminal
 ```
 
 `start` and `daemon install` refuse to track into an unencrypted database unless you pass
-`--allow-plaintext`. SQLCipher installs from a wheel only on Linux x86_64, so on macOS and Windows
-you'll normally need the flag ([start.md § 1](start.md#1-install)).
+`--allow-plaintext`. SQLCipher installs from a wheel only on Linux x86_64. On macOS you can build it
+with Homebrew instead; on Windows you'll normally need the flag ([start.md § 1](start.md#1-install)).
 
 Step-by-step setup (daemon, AI coach, GitHub, config, uninstall): [start.md](start.md).
 Every command: [docs/04-cli-reference.md](docs/04-cli-reference.md).

@@ -28,8 +28,16 @@ Extras, combinable as `".[encrypted,ai,github]"`:
 
 Want `focusguard` on your PATH outside the venv? `pipx install .` from the repo root.
 
-**Encryption on macOS or Windows** [verify]: install the SQLCipher library (macOS:
-`brew install sqlcipher`), then `pip install sqlcipher3`, which builds against it. FocusGuard uses
+**Encryption on macOS**: install the SQLCipher library, then build `sqlcipher3` against it (checked
+in the `encrypted-macos` CI job):
+
+```bash
+brew install sqlcipher
+P="$(brew --prefix sqlcipher)"
+C_INCLUDE_PATH="$P/include:$P/include/sqlcipher" LIBRARY_PATH="$P/lib" pip install sqlcipher3
+```
+
+On Windows this route is [verify]. FocusGuard uses
 whichever `sqlcipher3` module is importable.
 
 **Adding encryption later** is supported. An existing plain database keeps opening (with a
@@ -180,7 +188,7 @@ The config file is optional; every key has a default. Its location comes from `p
 | --- | --- | --- |
 | macOS | `~/Library/Application Support/focusguard/config.toml` | same folder, `focus.db` |
 | Linux | `~/.config/focusguard/config.toml` | `~/.local/share/focusguard/focus.db` |
-| Windows | `%LOCALAPPDATA%\focusguard\focusguard\config.toml` [verify] | `%LOCALAPPDATA%\focusguard\focusguard\focus.db` [verify] |
+| Windows | `%LOCALAPPDATA%\focusguard\focusguard\config.toml` | `%LOCALAPPDATA%\focusguard\focusguard\focus.db` |
 
 `focusguard privacy show` prints the exact paths on your machine. On macOS it is **not**
 `~/.config/focusguard`; a file there is ignored.
